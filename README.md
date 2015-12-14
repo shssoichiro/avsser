@@ -26,6 +26,10 @@ Avsser uses [Semantic Versioning](http://semver.org/) for all of its releases.
 
 Avsser is released under the MIT License.
 
+## Compiling
+
+Use `cargo build`. Currently only works on Rust nightlies. This will probably change in the future.
+
 ## Contributing
 
 All contributions are welcome via Github. Bug reports and feature requests should
