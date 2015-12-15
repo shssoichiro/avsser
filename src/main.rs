@@ -8,6 +8,7 @@ use getopts::Options;
 use std::env;
 use std::path::PathBuf;
 use avsser::generic::input::get_list_of_files;
+use avsser::generic::input::determine_input_type;
 use avsser::generic::output::create_avs_script;
 use avsser::generic::output::AvsOptions;
 
@@ -39,6 +40,9 @@ fn main() {
 
     let input = get_list_of_files(PathBuf::from(input), false).ok().expect("Unable to read input file(s)");
     for file in input {
+        if determine_input_type(file.clone()).is_none() {
+            continue;
+        }
         let path = PathBuf::from(file);
         create_avs_script(
             path.clone(),
