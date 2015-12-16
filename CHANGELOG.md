@@ -2,8 +2,8 @@
 
 ## 0.2.0
 
-* Extract first subtitle track from a video with -A
-* TextSub subtitle file (filename.ass) into the output script with -a
+* Extract first subtitle track from a video with -S
+* TextSub subtitle file (filename.ass) into the output script with -s
 
 ## 0.1.1
 
