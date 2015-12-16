@@ -23,8 +23,8 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    opts.optflag("a", "ass", "include subtitles with TextSub(input_filename.ass)");
-    opts.optflag("A", "ass-extract", "extract subtitles from the input files (currently only gets first subtitle track)");
+    opts.optflag("s", "subtitle", "include subtitles with TextSub(input_filename.ass)");
+    opts.optflag("S", "sub-extract", "extract subtitles from the input files (currently only gets first subtitle track)");
     let matches = match opts.parse(&args) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
@@ -51,8 +51,8 @@ fn main() {
             path.with_extension("avs"),
             AvsOptions {
                 remove_grain: Some(1),
-                ass: matches.opt_present("a"),
-                ass_extract: matches.opt_present("A")
+                ass: matches.opt_present("s"),
+                ass_extract: matches.opt_present("S")
             }).ok();
     }
 }

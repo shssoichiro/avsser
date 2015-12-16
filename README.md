@@ -19,6 +19,10 @@ I hope to add the following features as well:
 - [ ] Detect ordered chapters and automatically link videos in generated script
 - [ ] Allow selection of filters to automatically apply to all files during a run
 
+## Dependencies
+
+Requires ffmpeg to be installed on your system.
+
 ## Versioning
 
 Avsser uses [Semantic Versioning](http://semver.org/) for all of its releases.
@@ -29,7 +33,7 @@ Avsser is released under the MIT License.
 
 ## Compiling
 
-Use `cargo build`. Currently only works on Rust nightlies. This will probably change in the future.
+Use `cargo build`. Currently only works on Rust nightlies. This will change in the future.
 
 ## Contributing
 
