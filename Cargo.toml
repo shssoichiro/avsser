@@ -1,8 +1,7 @@
 [package]
 name = "avsser"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Joshua Holmer <jholmer.in@gmail.com>"]
 
 [dependencies]
 getopts = "0.2"
-clippy = "*"

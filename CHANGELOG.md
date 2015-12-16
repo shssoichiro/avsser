@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+* Remove clippy dependency (run it through cargo instead)
+* Avsser should now compile in the latest stable Rust (1.5.0)
+
 ## 0.2.0
 
 * Extract first subtitle track from a video with -S

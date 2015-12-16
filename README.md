@@ -33,7 +33,7 @@ Avsser is released under the MIT License.
 
 ## Compiling
 
-Use `cargo build`. Currently only works on Rust nightlies. This will change in the future.
+Use `cargo build --release`.
 
 ## Contributing
 

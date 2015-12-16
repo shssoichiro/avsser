@@ -1,6 +1,3 @@
-#![feature(plugin)]
-#![plugin(clippy)]
-
 extern crate avsser;
 extern crate getopts;
 
