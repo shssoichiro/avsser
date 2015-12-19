@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::Command;
 
 pub struct AvsOptions {
@@ -9,7 +9,7 @@ pub struct AvsOptions {
     pub ass_extract: bool
 }
 
-pub fn create_avs_script(in_file: PathBuf, out_file: PathBuf, opts: AvsOptions) -> Result<(), String> {
+pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> Result<(), String> {
     let mut script = match File::create(out_file) {
         Ok(x) => x,
         Err(x) => return Err(format!("{}", x))
@@ -28,7 +28,7 @@ pub fn create_avs_script(in_file: PathBuf, out_file: PathBuf, opts: AvsOptions) 
     Ok(())
 }
 
-pub fn extract_subtitles(in_file: PathBuf) -> Result<(), String> {
+pub fn extract_subtitles(in_file: &Path) -> Result<(), String> {
     match Command::new("ffmpeg")
         .args(&["-i",
             format!("{}", in_file.to_str().unwrap()).as_ref(),

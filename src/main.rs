@@ -3,6 +3,7 @@ extern crate getopts;
 
 use getopts::Options;
 use std::env;
+use std::path::Path;
 use std::path::PathBuf;
 use avsser::generic::input::get_list_of_files;
 use avsser::generic::input::determine_input_type;
@@ -37,15 +38,15 @@ fn main() {
         return;
     };
 
-    let input = get_list_of_files(PathBuf::from(input), false).ok().expect("Unable to read input file(s)");
+    let input = get_list_of_files(Path::new(&input), false).ok().expect("Unable to read input file(s)");
     for file in input {
-        if determine_input_type(file.clone()).is_none() {
+        if determine_input_type(file.as_ref()).is_none() {
             continue;
         }
         let path = PathBuf::from(file);
         create_avs_script(
-            path.clone(),
-            path.with_extension("avs"),
+            path.as_ref(),
+            path.with_extension("avs").as_ref(),
             AvsOptions {
                 remove_grain: Some(1),
                 ass: matches.opt_present("s"),

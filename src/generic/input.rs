@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 
 pub enum InputTypes {
@@ -8,19 +9,19 @@ pub enum InputTypes {
     Other
 }
 
-pub fn get_list_of_files(path: PathBuf, recursive: bool) -> Result<Vec<PathBuf>, String> {
+pub fn get_list_of_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>, String> {
     if path.is_file() {
-        return Ok(vec![path]);
+        return Ok(vec![path.to_owned()]);
     }
     if !path.is_dir() {
         return Err("Cannot handle file, perhaps it's a symlink or you don't have proper permissions?".to_owned());
     }
     let mut files: Vec<PathBuf> = vec![];
-    get_recursive_files(path, &mut files, recursive);
+    get_recursive_files(&path, &mut files, recursive);
     Ok(files)
 }
 
-fn get_recursive_files(path: PathBuf, mut files: &mut Vec<PathBuf>, recursive: bool) {
+fn get_recursive_files(path: &Path, mut files: &mut Vec<PathBuf>, recursive: bool) {
     let paths = fs::read_dir(path).unwrap();
     for path in paths {
         let next = path.unwrap().path();
@@ -28,12 +29,12 @@ fn get_recursive_files(path: PathBuf, mut files: &mut Vec<PathBuf>, recursive: b
             files.push(next.clone());
         }
         if recursive && next.is_dir() {
-            get_recursive_files(next, &mut files, recursive);
+            get_recursive_files(next.as_ref(), &mut files, recursive);
         }
     }
 }
 
-pub fn determine_input_type(path: PathBuf) -> Option<InputTypes> {
+pub fn determine_input_type(path: &Path) -> Option<InputTypes> {
     // This is simplistic and assumes that the extension is a source of truth
     // TODO: Make this look at the container headers instead
     let extension = path.extension().unwrap().to_str().unwrap().to_lowercase();
