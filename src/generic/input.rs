@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
@@ -9,12 +8,12 @@ pub enum InputTypes {
     Other
 }
 
-pub fn get_list_of_files(path: PathBuf, recursive: bool) -> Result<Vec<PathBuf>, Box<Error>> {
+pub fn get_list_of_files(path: PathBuf, recursive: bool) -> Result<Vec<PathBuf>, String> {
     if path.is_file() {
         return Ok(vec![path]);
     }
     if !path.is_dir() {
-        panic!("Cannot handle file, perhaps it's a symlink or you don't have proper permissions?");
+        return Err("Cannot handle file, perhaps it's a symlink or you don't have proper permissions?".to_owned());
     }
     let mut files: Vec<PathBuf> = vec![];
     get_recursive_files(path, &mut files, recursive);
