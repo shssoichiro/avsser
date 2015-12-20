@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 [unreleased]
+* Can add audio to scripts, from video or from file with same name, different extension
+* Minor optimizations and code cleanup
+
 ## 0.2.1
 
 * Remove clippy dependency (run it through cargo instead)

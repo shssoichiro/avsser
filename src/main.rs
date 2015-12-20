@@ -23,6 +23,8 @@ fn main() {
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("s", "subtitle", "include subtitles with TextSub(input_filename.ass)");
     opts.optflag("S", "sub-extract", "extract subtitles from the input files (currently only gets first subtitle track)");
+    opts.optflag("a", "audio", "include audio from video");
+    opts.optopt("A", "audio-ext", "include audio from separate file with extension (takes precedence over audio from video)", "EXT");
     let matches = match opts.parse(&args) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
@@ -50,7 +52,8 @@ fn main() {
             AvsOptions {
                 remove_grain: Some(1),
                 ass: matches.opt_present("s"),
-                ass_extract: matches.opt_present("S")
+                ass_extract: matches.opt_present("S"),
+                audio: (matches.opt_present("a"), matches.opt_str("A"))
             }).ok();
     }
 }
