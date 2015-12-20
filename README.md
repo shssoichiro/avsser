@@ -21,7 +21,7 @@ I hope to add the following features as well:
 
 ## Dependencies
 
-Requires ffmpeg to be installed on your system.
+Certain features require ffmpeg and mkvtoolnix to be installed on your system.
 
 ## Versioning
 
