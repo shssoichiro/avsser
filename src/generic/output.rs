@@ -50,3 +50,25 @@ pub fn extract_subtitles(in_file: &Path) -> Result<(), String> {
             Err(x) => Err(format!("{}", x))
         }
 }
+
+pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
+    let fonts = match super::super::parsers::mkvinfo::get_fonts_list(in_file) {
+        Ok(x) => x,
+        Err(x) => return Err(format!("{}", x))
+    };
+    for (id, filename) in &fonts {
+        let font_path = in_file.with_file_name(filename);
+        if !font_path.exists() {
+            match Command::new("mkvextract")
+                .args(&["attachments",
+                    format!("{}", in_file.to_str().unwrap()).as_ref(),
+                    format!("{}:{}", id, font_path.to_str().unwrap()).as_ref()])
+                .status() {
+                    Ok(_) => (),
+                    Err(x) => return Err(format!("{}", x))
+                };
+        }
+    }
+
+    Ok(())
+}

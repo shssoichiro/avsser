@@ -1,8 +1,11 @@
+extern crate regex;
+
 pub mod generic {
     pub mod input;
     pub mod output;
 }
 
-mod parsers {
-    mod ffprobe;
+pub mod parsers {
+    pub mod ffprobe;
+    pub mod mkvinfo;
 }

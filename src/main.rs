@@ -9,6 +9,7 @@ use avsser::generic::input::get_list_of_files;
 use avsser::generic::input::determine_input_type;
 use avsser::generic::output::create_avs_script;
 use avsser::generic::output::AvsOptions;
+use avsser::generic::output::extract_fonts;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] INPUT", program);
@@ -25,6 +26,7 @@ fn main() {
     opts.optflag("S", "sub-extract", "extract subtitles from the input files (currently only gets first subtitle track)");
     opts.optflag("a", "audio", "include audio from video");
     opts.optopt("A", "audio-ext", "include audio from separate file with extension (takes precedence over audio from video)", "EXT");
+    opts.optflag("f", "fonts", "extract fonts from mkv container");
     let matches = match opts.parse(&args) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
@@ -40,12 +42,15 @@ fn main() {
         return;
     };
 
-    let input = get_list_of_files(Path::new(&input), false).ok().expect("Unable to read input file(s)");
+    let input = get_list_of_files(Path::new(&input), false).expect("Unable to read input file(s)");
     for file in input {
         if determine_input_type(file.as_ref()).is_none() {
             continue;
         }
         let path = PathBuf::from(file);
+        if matches.opt_present("f") {
+            extract_fonts(path.as_ref()).ok();
+        }
         create_avs_script(
             path.as_ref(),
             path.with_extension("avs").as_ref(),

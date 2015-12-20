@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.3.0 [unreleased]
+## 0.3.0
 * Can add audio to scripts, from video or from file with same name, different extension
+* Can extract fonts from MKV containers
 * Minor optimizations and code cleanup
 
 ## 0.2.1

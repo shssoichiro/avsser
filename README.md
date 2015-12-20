@@ -11,10 +11,10 @@ the video with `FFVideoSource`.
 I hope to add the following features as well:
 
 - [ ] Recursively scan directories
-- [ ] Allow optionally sourcing audio with video
+- [x] Allow optionally sourcing audio with video
 - [x] Automatically extract subtitles from Matroska containers
   - [ ] Support choosing which subtitle track to export, if multiple available
-  - [ ] Extract fonts from Matroska containers
+  - [x] Extract fonts from Matroska containers
   - [ ] Automatically install extracted fonts on the user's system
 - [ ] Detect ordered chapters and automatically link videos in generated script
 - [ ] Allow selection of filters to automatically apply to all files during a run
