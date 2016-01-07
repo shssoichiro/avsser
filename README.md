@@ -34,7 +34,7 @@ Avsser is released under the MIT License.
 ## Compiling
 
 Use `cargo build --release`. Avsser should compiled with the latest stable Rust.
-If it doesn't, please create an issue and include your Rust version Cargo version,
+If it doesn't, please create an issue and include your Rust version, Cargo version,
 OS, and the complete compiler error message.
 
 ## Contributing
