@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.0
+* Automatically join ordered chapters in our script
+
 ## 0.3.0
 * Can add audio to scripts, from video or from file with same name, different extension
 * Can extract fonts from MKV containers

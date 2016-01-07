@@ -16,7 +16,7 @@ I hope to add the following features as well:
   - [ ] Support choosing which subtitle track to export, if multiple available
   - [x] Extract fonts from Matroska containers
   - [ ] Automatically install extracted fonts on the user's system
-- [ ] Detect ordered chapters and automatically link videos in generated script
+- [x] Detect ordered chapters and automatically link videos in generated script
 - [ ] Allow selection of filters to automatically apply to all files during a run
 
 ## Dependencies

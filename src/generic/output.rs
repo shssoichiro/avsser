@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 
 pub struct AvsOptions {
@@ -11,27 +13,82 @@ pub struct AvsOptions {
 }
 
 pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> Result<(), String> {
+    let breakpoints = match super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file) {
+        Ok(x) => x,
+        Err(x) => return Err(format!("{}", x))
+    };
+    let mut iter = 0usize;
+    let mut current_breakpoint = None;
+    let mut current_filename = in_file.to_owned();
+    let mut segments: Vec<String> = Vec::new();
+    let mut cached_uuids: HashMap<[u8; 16], PathBuf> = HashMap::new();
+
+    loop {
+        if breakpoints.is_some() {
+            current_breakpoint = breakpoints.clone().unwrap().get(iter).cloned();
+            iter += 1;
+            if current_breakpoint.is_none() {
+                break;
+            }
+        }
+        if current_breakpoint.is_some() && current_breakpoint.clone().unwrap().foreign_uuid.is_some() {
+            let current_uuid = current_breakpoint.clone().unwrap().foreign_uuid.unwrap();
+            if let Some(filename) = cached_uuids.clone().get(&current_uuid) {
+                current_filename = filename.to_owned();
+            } else {
+                for external in in_file.parent().unwrap().read_dir().unwrap() {
+                    let path = external.unwrap().path();
+                    if path.extension().unwrap() != "mkv" || path.as_path() == in_file {
+                        continue;
+                    }
+                    if let Ok(uuid) = super::super::parsers::mkvinfo::get_file_uuid(&path) {
+                        cached_uuids.insert(uuid, path.to_owned());
+                        if uuid == current_uuid {
+                            current_filename = path.to_owned();
+                            break;
+                        }
+                    }
+                }
+            }
+            if current_filename.as_path() == in_file {
+                return Err("Could not find file linked through ordered chapters.".to_owned());
+            }
+        } else {
+            current_filename = in_file.to_owned();
+        }
+        let mut current_string = "".to_owned();
+        match opts.audio.clone() {
+            (false, None) => current_string.push_str(format!("FFVideoSource(\"{}\")", current_filename.to_str().unwrap()).as_ref()),
+            (true, None) => current_string.push_str(format!("AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", current_filename.to_str().unwrap(), current_filename.to_str().unwrap()).as_ref()),
+            (_, Some(x)) => current_string.push_str(format!("AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", current_filename.to_str().unwrap(), current_filename.with_extension(x).to_str().unwrap()).as_ref()),
+        }
+        if let Some(remove_grain) = opts.remove_grain {
+            current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
+        }
+        if opts.ass_extract {
+            try!(extract_subtitles(current_filename.as_ref()));
+        }
+        if opts.ass {
+            current_string.push_str(format!(".TextSub(\"{}\")", current_filename.with_extension("ass").to_str().unwrap()).as_ref());
+        }
+        if breakpoints.is_some() {
+            current_string.push_str(format!(".Trim({},{})", current_breakpoint.clone().unwrap().start_frame, current_breakpoint.clone().unwrap().end_frame).as_ref());
+            segments.push(current_string);
+        } else {
+            segments.push(current_string);
+            break;
+        }
+    }
+
     let mut script = match File::create(out_file) {
         Ok(x) => x,
         Err(x) => return Err(format!("{}", x))
     };
 
-    match opts.audio {
-        (false, None) => writeln!(&mut script, "FFVideoSource(\"{}\")", in_file.to_str().unwrap()).unwrap(),
-        (true, None) => writeln!(&mut script, "AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", in_file.to_str().unwrap(), in_file.to_str().unwrap()).unwrap(),
-        (_, Some(x)) => writeln!(&mut script, "AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", in_file.to_str().unwrap(), in_file.with_extension(x).to_str().unwrap()).unwrap(),
+    match writeln!(&mut script, "{}", segments.join("\\\n++ ")) {
+        Ok(_) => Ok(()),
+        Err(x) => return Err(format!("{}", x))
     }
-    if let Some(remove_grain) = opts.remove_grain {
-        writeln!(&mut script, "RemoveGrain({})", remove_grain).unwrap();
-    }
-    if opts.ass_extract {
-        try!(extract_subtitles(in_file.clone()));
-    }
-    if opts.ass {
-        writeln!(&mut script, "TextSub(\"{}\")", in_file.with_extension("ass").to_str().unwrap()).unwrap();
-    }
-
-    Ok(())
 }
 
 pub fn extract_subtitles(in_file: &Path) -> Result<(), String> {
