@@ -2,6 +2,13 @@
 name = "avsser"
 version = "0.4.1"
 authors = ["Joshua Holmer <jholmer.in@gmail.com>"]
+description = "A utility for generating AviSynth scripts"
+documentation = "https://github.com/shssoichiro/avsser"
+homepage = "https://github.com/shssoichiro/avsser"
+repository = "https://github.com/shssoichiro/avsser"
+readme = "README.md"
+license = "MIT"
+license-file = "LICENSE"
 
 [dependencies]
 getopts = "0.2"
