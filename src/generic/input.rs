@@ -6,6 +6,8 @@ pub enum InputTypes {
     Matroska,
     Mpeg4,
     Avi,
+    DgIndex,
+    DgAvc,
     Other
 }
 
@@ -42,6 +44,8 @@ pub fn determine_input_type(path: &Path) -> Option<InputTypes> {
         "mkv" => Some(InputTypes::Matroska),
         "mp4" => Some(InputTypes::Mpeg4),
         "avi" => Some(InputTypes::Avi),
+        "d2v" => Some(InputTypes::DgIndex),
+        "dga" => Some(InputTypes::DgAvc),
         "mpeg" => Some(InputTypes::Other),
         "mpg" => Some(InputTypes::Other),
         "wmv" => Some(InputTypes::Other),

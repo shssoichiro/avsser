@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use super::input::InputTypes;
 
 pub struct AvsOptions {
     pub remove_grain: Option<u8>,
@@ -57,10 +58,11 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
             current_filename = in_file.to_owned();
         }
         let mut current_string = "".to_owned();
+        let video_filter = determine_video_source_filter(&current_filename);
         match opts.audio.clone() {
-            (false, None) => current_string.push_str(format!("FFVideoSource(\"{}\")", current_filename.to_str().unwrap()).as_ref()),
-            (true, None) => current_string.push_str(format!("AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", current_filename.to_str().unwrap(), current_filename.to_str().unwrap()).as_ref()),
-            (_, Some(x)) => current_string.push_str(format!("AudioDub(FFVideoSource(\"{}\"), FFAudioSource(\"{}\"))", current_filename.to_str().unwrap(), current_filename.with_extension(x).to_str().unwrap()).as_ref()),
+            (false, None) => current_string.push_str(format!("{}(\"{}\")", video_filter, current_filename.to_str().unwrap()).as_ref()),
+            (true, None) => current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))", video_filter, current_filename.to_str().unwrap(), current_filename.to_str().unwrap()).as_ref()),
+            (_, Some(x)) => current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))", video_filter, current_filename.to_str().unwrap(), current_filename.with_extension(x).to_str().unwrap()).as_ref()),
         }
         if let Some(remove_grain) = opts.remove_grain {
             current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
@@ -88,6 +90,15 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
     match writeln!(&mut script, "{}", segments.join("\\\n++ ")) {
         Ok(_) => Ok(()),
         Err(x) => return Err(format!("{}", x))
+    }
+}
+
+pub fn determine_video_source_filter(path: &Path) -> String {
+    match super::input::determine_input_type(path) {
+        Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source".to_owned(),
+        Some(InputTypes::DgAvc) => "AVCSource".to_owned(),
+        Some(_) => "FFVideoSource".to_owned(),
+        None => panic!("Invalid input type")
     }
 }
 
