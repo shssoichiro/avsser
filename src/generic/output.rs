@@ -89,7 +89,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
 
     match writeln!(&mut script, "{}", segments.join("\\\n++ ")) {
         Ok(_) => Ok(()),
-        Err(x) => return Err(format!("{}", x))
+        Err(x) => Err(format!("{}", x))
     }
 }
 

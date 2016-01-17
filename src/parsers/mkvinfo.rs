@@ -83,7 +83,6 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
         };
 
     let output = String::from_utf8(output.stdout).unwrap();
-    let mut iter = output.lines();
     let mut chapters: Vec<BreakPoint> = Vec::new();
     let mut video_fps: Option<f64> = None;
     let fps_pattern = Regex::new(r"Default duration:.+\((\d+\.\d+) frames/fields per second").unwrap();
@@ -96,7 +95,7 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
     let mut current_section: Option<String> = None;
     let mut current_chapter: Option<BreakPoint> = None;
     let mut ordered_chapters = false;
-    while let Some(line) = iter.next() {
+    for line in output.lines() {
         // Find video_fps
         if video_fps.is_none() {
             if current_section != Some("video".to_owned()) {
