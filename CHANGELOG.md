@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.1
+* Recognize .dga and .d2v files as valid input formats
+
 ## 0.4.0
 * Automatically join ordered chapters in our script
 
