@@ -6,7 +6,7 @@ in Rust, primarily because I'm more familiar with Rust than with Python.
 
 Currently Avsser can take a video file or directory containing videos and create
 an Avisynth script with the same file name (extension changed to .avs) that loads
-the video with `FFVideoSource`.
+the video with `FFVideoSource` (or an appropriate source filter based on the file type).
 
 I hope to add the following features as well:
 
