@@ -34,7 +34,7 @@ Avsser is released under the MIT License.
 ## Installing
 
 Avsser is available on crates.io, so you can install by running `cargo install avsser`.
-Avsser should compiled with the latest stable Rust. If it doesn't, please create an
+Avsser should compile with the latest stable Rust. If it doesn't, please create an
 issue and include your Rust version, Cargo version, OS, and the complete compiler error message.
 
 ## Contributing
