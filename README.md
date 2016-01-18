@@ -31,11 +31,11 @@ Avsser uses [Semantic Versioning](http://semver.org/) for all of its releases.
 
 Avsser is released under the MIT License.
 
-## Compiling
+## Installing
 
-Use `cargo build --release`. Avsser should compiled with the latest stable Rust.
-If it doesn't, please create an issue and include your Rust version, Cargo version,
-OS, and the complete compiler error message.
+Avsser is available on crates.io, so you can install by running `cargo install avsser`.
+Avsser should compiled with the latest stable Rust. If it doesn't, please create an
+issue and include your Rust version, Cargo version, OS, and the complete compiler error message.
 
 ## Contributing
 
