@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.2
+* Don't ask to overwrite subtitles a million times when writing ordered chapters (#1)
+
 ## 0.4.1
 * Recognize .dga and .d2v files as valid input formats
 
