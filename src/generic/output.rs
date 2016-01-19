@@ -67,7 +67,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
         if let Some(remove_grain) = opts.remove_grain {
             current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
         }
-        if opts.ass_extract {
+        if opts.ass_extract && !current_filename.with_extension("ass").exists() {
             try!(extract_subtitles(current_filename.as_ref()));
         }
         if opts.ass {
