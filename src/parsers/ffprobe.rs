@@ -4,12 +4,11 @@ use std::process::Command;
 
 pub fn get_streams_list(path: &Path) -> Result<Vec<HashMap<String, String>>, String> {
     let output = match Command::new("ffprobe")
-        .args(&["-show_streams",
-            format!("{}", path.to_str().unwrap()).as_ref()])
-        .output() {
-            Ok(x) => x,
-            Err(x) => return Err(format!("{}", x))
-        };
+                           .args(&["-show_streams", path.to_str().unwrap().as_ref()])
+                           .output() {
+        Ok(x) => x,
+        Err(x) => return Err(format!("{}", x)),
+    };
 
     let mut streams: Vec<HashMap<String, String>> = Vec::new();
     let mut current: HashMap<String, String> = HashMap::new();

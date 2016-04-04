@@ -8,7 +8,7 @@ pub enum InputTypes {
     Avi,
     DgIndex,
     DgAvc,
-    Other
+    Other,
 }
 
 pub fn get_list_of_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>, String> {
@@ -16,7 +16,9 @@ pub fn get_list_of_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>, S
         return Ok(vec![path.to_owned()]);
     }
     if !path.is_dir() {
-        return Err("Cannot handle file, perhaps it's a symlink or you don't have proper permissions?".to_owned());
+        return Err("Cannot handle file, perhaps it's a symlink or you don't have proper \
+                    permissions?"
+                       .to_owned());
     }
     let mut files: Vec<PathBuf> = vec![];
     get_recursive_files(&path, &mut files, recursive);
@@ -46,12 +48,7 @@ pub fn determine_input_type(path: &Path) -> Option<InputTypes> {
         "avi" => Some(InputTypes::Avi),
         "d2v" => Some(InputTypes::DgIndex),
         "dga" => Some(InputTypes::DgAvc),
-        "mpeg" => Some(InputTypes::Other),
-        "mpg" => Some(InputTypes::Other),
-        "wmv" => Some(InputTypes::Other),
-        "mov" => Some(InputTypes::Other),
-        "flv" => Some(InputTypes::Other),
-        "webm" => Some(InputTypes::Other),
-        _ => None
+        "mpeg" | "mpg" | "wmv" | "mov" | "flv" | "webm" => Some(InputTypes::Other),
+        _ => None,
     }
 }

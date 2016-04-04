@@ -1,27 +1,25 @@
-use std::path::Path;
 use std::collections::HashMap;
+use std::error::Error;
+use std::path::Path;
 use std::process::Command;
 use regex::Regex;
 use rustc_serialize::hex::FromHex;
 
 pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     let output = match Command::new("mkvmerge")
-        .args(&["-i",
-            format!("{}", path.to_str().unwrap()).as_ref()])
-        .output() {
-            Ok(x) => x,
-            Err(x) => return Err(format!("{}", x))
-        };
+                           .args(&["-i", path.to_str().unwrap().as_ref()])
+                           .output() {
+        Ok(x) => x,
+        Err(x) => return Err(format!("{}", x)),
+    };
 
     let mut attachments: HashMap<usize, String> = HashMap::new();
     let pattern = Regex::new(r"Attachment ID (\d+): .* file name '(.+)'").unwrap();
     for line in String::from_utf8(output.stdout).unwrap().lines() {
         if line.starts_with("Attachment") && (line.contains(".ttf") || line.contains(".otf")) {
             let captures = pattern.captures(line).unwrap();
-            attachments.insert(
-                captures.at(1).unwrap().parse::<usize>().unwrap(),
-                captures.at(2).unwrap().to_owned()
-            );
+            attachments.insert(captures.at(1).unwrap().parse::<usize>().unwrap(),
+                               captures.at(2).unwrap().to_owned());
         }
     }
 
@@ -34,59 +32,60 @@ pub fn get_file_uuid(path: &Path) -> Result<[u8; 16], String> {
     ).unwrap();
 
     let output = match Command::new("mkvinfo")
-        .args(&[format!("{}", path.to_str().unwrap())])
-        .output() {
-            Ok(x) => x,
-            Err(x) => return Err(format!("{}", x))
-        };
+                           .args(&[path.to_str().unwrap()])
+                           .output() {
+        Ok(x) => x,
+        Err(x) => return Err(x.description().to_owned()),
+    };
 
     let output = String::from_utf8(output.stdout).unwrap();
     for line in output.lines() {
         if let Some(captures) = uuid_regex.captures(line) {
-            return Ok([
-                captures[1].from_hex().unwrap()[0],
-                captures[2].from_hex().unwrap()[0],
-                captures[3].from_hex().unwrap()[0],
-                captures[4].from_hex().unwrap()[0],
-                captures[5].from_hex().unwrap()[0],
-                captures[6].from_hex().unwrap()[0],
-                captures[7].from_hex().unwrap()[0],
-                captures[8].from_hex().unwrap()[0],
-                captures[9].from_hex().unwrap()[0],
-                captures[10].from_hex().unwrap()[0],
-                captures[11].from_hex().unwrap()[0],
-                captures[12].from_hex().unwrap()[0],
-                captures[13].from_hex().unwrap()[0],
-                captures[14].from_hex().unwrap()[0],
-                captures[15].from_hex().unwrap()[0],
-                captures[16].from_hex().unwrap()[0],
-            ]);
+            return Ok([captures[1].from_hex().unwrap()[0],
+                       captures[2].from_hex().unwrap()[0],
+                       captures[3].from_hex().unwrap()[0],
+                       captures[4].from_hex().unwrap()[0],
+                       captures[5].from_hex().unwrap()[0],
+                       captures[6].from_hex().unwrap()[0],
+                       captures[7].from_hex().unwrap()[0],
+                       captures[8].from_hex().unwrap()[0],
+                       captures[9].from_hex().unwrap()[0],
+                       captures[10].from_hex().unwrap()[0],
+                       captures[11].from_hex().unwrap()[0],
+                       captures[12].from_hex().unwrap()[0],
+                       captures[13].from_hex().unwrap()[0],
+                       captures[14].from_hex().unwrap()[0],
+                       captures[15].from_hex().unwrap()[0],
+                       captures[16].from_hex().unwrap()[0]]);
         }
     }
 
-    Err(format!("No uuid found in {}, is this a valid Matroska file?", path.to_str().unwrap()))
+    Err(format!("No uuid found in {}, is this a valid Matroska file?",
+                path.to_str().unwrap()))
 }
 
 #[derive(Clone,Debug)]
 pub struct BreakPoint {
     pub start_frame: u64,
     pub end_frame: u64,
-    pub foreign_uuid: Option<[u8; 16]>
+    pub foreign_uuid: Option<[u8; 16]>,
 }
 
 pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>, String> {
     let output = match Command::new("mkvinfo")
-        .args(&[format!("{}", path.to_str().unwrap())])
-        .output() {
-            Ok(x) => x,
-            Err(x) => return Err(format!("{}", x))
-        };
+                           .args(&[path.to_str().unwrap()])
+                           .output() {
+        Ok(x) => x,
+        Err(x) => return Err(x.description().to_owned()),
+    };
 
     let output = String::from_utf8(output.stdout).unwrap();
     let mut chapters: Vec<BreakPoint> = Vec::new();
     let mut video_fps: Option<f64> = None;
-    let fps_pattern = Regex::new(r"Default duration:.+\((\d+\.\d+) frames/fields per second").unwrap();
-    let time_start_regex = Regex::new(r"ChapterTimeStart: (\d{2}):(\d{2}):(\d{2}).(\d{9})").unwrap();
+    let fps_pattern = Regex::new(r"Default duration:.+\((\d+\.\d+) frames/fields per second")
+                          .unwrap();
+    let time_start_regex = Regex::new(r"ChapterTimeStart: (\d{2}):(\d{2}):(\d{2}).(\d{9})")
+                               .unwrap();
     let time_end_regex = Regex::new(r"ChapterTimeEnd: (\d{2}):(\d{2}):(\d{2}).(\d{9})").unwrap();
     // I'm not that good at regex
     let foreign_uuid_regex = Regex::new(
@@ -98,14 +97,12 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
     for line in output.lines() {
         // Find video_fps
         if video_fps.is_none() {
-            if current_section != Some("video".to_owned()) {
-                if line == "|  + Track type: video" {
-                    current_section = Some("video".to_owned());
-                }
-            } else {
+            if current_section == Some("video".to_owned()) {
                 if let Some(captures) = fps_pattern.captures(line) {
                     video_fps = Some(captures.at(1).unwrap().parse::<f64>().unwrap());
                 }
+            } else if line == "|  + Track type: video" {
+                current_section = Some("video".to_owned());
             }
             continue;
         }
@@ -121,48 +118,49 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                 current_chapter = Some(BreakPoint {
                     start_frame: 0,
                     end_frame: 0,
-                    foreign_uuid: None
+                    foreign_uuid: None,
                 });
                 continue;
             }
             if current_chapter.is_some() {
                 if let Some(captures) = time_start_regex.captures(line) {
-                    current_chapter.as_mut().unwrap().start_frame = timestamp_to_frame_number(
-                        captures.at(1).unwrap().parse::<u64>().unwrap(),
-                        captures.at(2).unwrap().parse::<u64>().unwrap(),
-                        captures.at(3).unwrap().parse::<f64>().unwrap()
-                            + captures.at(4).unwrap().parse::<f64>().unwrap() / 1000000000f64,
-                        video_fps.unwrap());
+                    current_chapter.as_mut().unwrap().start_frame =
+                        timestamp_to_frame_number(captures.at(1).unwrap().parse::<u64>().unwrap(),
+                                                  captures.at(2).unwrap().parse::<u64>().unwrap(),
+                                                  captures.at(3).unwrap().parse::<f64>().unwrap() +
+                                                  captures.at(4).unwrap().parse::<f64>().unwrap() /
+                                                  1000000000f64,
+                                                  video_fps.unwrap());
                     continue;
                 }
                 if let Some(captures) = time_end_regex.captures(line) {
-                    current_chapter.as_mut().unwrap().end_frame = timestamp_to_frame_number(
-                        captures.at(1).unwrap().parse::<u64>().unwrap(),
-                        captures.at(2).unwrap().parse::<u64>().unwrap(),
-                        captures.at(3).unwrap().parse::<f64>().unwrap()
-                            + captures.at(4).unwrap().parse::<f64>().unwrap() / 1000000000f64,
-                        video_fps.unwrap());
+                    current_chapter.as_mut().unwrap().end_frame =
+                        timestamp_to_frame_number(captures.at(1).unwrap().parse::<u64>().unwrap(),
+                                                  captures.at(2).unwrap().parse::<u64>().unwrap(),
+                                                  captures.at(3).unwrap().parse::<f64>().unwrap() +
+                                                  captures.at(4).unwrap().parse::<f64>().unwrap() /
+                                                  1000000000f64,
+                                                  video_fps.unwrap());
                     continue;
                 }
                 if let Some(captures) = foreign_uuid_regex.captures(line) {
-                    current_chapter.as_mut().unwrap().foreign_uuid = Some([
-                        captures[1].from_hex().unwrap()[0],
-                        captures[2].from_hex().unwrap()[0],
-                        captures[3].from_hex().unwrap()[0],
-                        captures[4].from_hex().unwrap()[0],
-                        captures[5].from_hex().unwrap()[0],
-                        captures[6].from_hex().unwrap()[0],
-                        captures[7].from_hex().unwrap()[0],
-                        captures[8].from_hex().unwrap()[0],
-                        captures[9].from_hex().unwrap()[0],
-                        captures[10].from_hex().unwrap()[0],
-                        captures[11].from_hex().unwrap()[0],
-                        captures[12].from_hex().unwrap()[0],
-                        captures[13].from_hex().unwrap()[0],
-                        captures[14].from_hex().unwrap()[0],
-                        captures[15].from_hex().unwrap()[0],
-                        captures[16].from_hex().unwrap()[0],
-                    ]);
+                    current_chapter.as_mut().unwrap().foreign_uuid =
+                        Some([captures[1].from_hex().unwrap()[0],
+                              captures[2].from_hex().unwrap()[0],
+                              captures[3].from_hex().unwrap()[0],
+                              captures[4].from_hex().unwrap()[0],
+                              captures[5].from_hex().unwrap()[0],
+                              captures[6].from_hex().unwrap()[0],
+                              captures[7].from_hex().unwrap()[0],
+                              captures[8].from_hex().unwrap()[0],
+                              captures[9].from_hex().unwrap()[0],
+                              captures[10].from_hex().unwrap()[0],
+                              captures[11].from_hex().unwrap()[0],
+                              captures[12].from_hex().unwrap()[0],
+                              captures[13].from_hex().unwrap()[0],
+                              captures[14].from_hex().unwrap()[0],
+                              captures[15].from_hex().unwrap()[0],
+                              captures[16].from_hex().unwrap()[0]]);
                     continue;
                 }
             }
@@ -172,11 +170,9 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                 }
                 break;
             }
-        } else {
-            if line == "|+ Chapters" {
-                current_section = Some("chapters".to_owned());
-                continue;
-            }
+        } else if line == "|+ Chapters" {
+            current_section = Some("chapters".to_owned());
+            continue;
         }
     }
 
@@ -190,7 +186,7 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
     let mut merging = BreakPoint {
         start_frame: 0,
         end_frame: 0,
-        foreign_uuid: None
+        foreign_uuid: None,
     };
     while let Some(chapter) = iter.next() {
         if chapter.foreign_uuid.is_some() {
@@ -207,7 +203,7 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                 merging = BreakPoint {
                     start_frame: 0,
                     end_frame: 0,
-                    foreign_uuid: None
+                    foreign_uuid: None,
                 };
             }
         } else {

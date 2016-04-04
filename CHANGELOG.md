@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+* Flag to not add remove grain
+* Flag to resize video (using lanczos4resize)
+* Run clippy on everything
+
 ## 0.4.2
 * Don't ask to overwrite subtitles a million times when writing ordered chapters (#1)
 
