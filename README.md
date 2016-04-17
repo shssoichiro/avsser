@@ -13,7 +13,7 @@ I hope to add the following features as well:
 - [ ] Recursively scan directories
 - [x] Allow optionally sourcing audio with video
 - [x] Automatically extract subtitles from Matroska containers
-  - [ ] Support choosing which subtitle track to export, if multiple available
+  - [X] Support choosing which subtitle track to export, if multiple available
   - [x] Extract fonts from Matroska containers
   - [ ] Automatically install extracted fonts on the user's system
 - [x] Detect ordered chapters and automatically link videos in generated script

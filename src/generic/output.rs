@@ -9,7 +9,7 @@ use super::input::InputTypes;
 pub struct AvsOptions {
     pub remove_grain: Option<u8>,
     pub ass: bool,
-    pub ass_extract: bool,
+    pub ass_extract: Option<u8>,
     pub audio: (bool, Option<String>),
     pub resize: Option<(u32, u32)>,
 }
@@ -91,8 +91,12 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
         if let Some(remove_grain) = opts.remove_grain {
             current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
         }
-        if opts.ass_extract && !current_filename.with_extension("ass").exists() {
-            try!(extract_subtitles(current_filename.as_ref()));
+        if let Some(sub_track) = opts.ass_extract {
+            if current_filename.with_extension("ass").exists() {
+                println!("Cowardly refusing to overwrite existing subtitles.");
+            } else {
+                try!(extract_subtitles(current_filename.as_ref(), sub_track));
+            }
         }
         if opts.ass {
             current_string.push_str(format!(".TextSub(\"{}\")",
@@ -133,14 +137,12 @@ pub fn determine_video_source_filter(path: &Path) -> String {
     }
 }
 
-pub fn extract_subtitles(in_file: &Path) -> Result<(), String> {
+pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
     match Command::new("ffmpeg")
               .args(&["-i",
                       in_file.to_str().unwrap().as_ref(),
-                      "-an",
-                      "-vn",
-                      "-c:s:0",
-                      "copy",
+                      "-map",
+                      &format!("0:s:{}", sub_track),
                       "-map_chapters",
                       "-1",
                       in_file.with_extension("ass").to_str().unwrap().as_ref()])

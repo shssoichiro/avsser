@@ -37,8 +37,11 @@ fn main() {
                  "include subtitles with TextSub(input_filename.ass)");
     opts.optflag("S",
                  "sub-extract",
-                 "extract subtitles from the input files (currently only gets first subtitle \
-                  track)");
+                 "extract subtitles from the input files (defaults to track 0)");
+    opts.optopt("T",
+                "sub-track",
+                "select which subtitle track to extract, 0-indexed (does nothing without -S)",
+                "TRACK");
     opts.optflag("a", "audio", "include audio from video");
     opts.optopt("A",
                 "audio-ext",
@@ -85,7 +88,15 @@ fn main() {
                                   Some(1)
                               },
                               ass: matches.opt_present("s"),
-                              ass_extract: matches.opt_present("S"),
+                              ass_extract: if matches.opt_present("S") {
+                                  if let Some(track) = matches.opt_str("T") {
+                                      Some(track.parse().unwrap())
+                                  } else {
+                                      Some(0)
+                                  }
+                              } else {
+                                  None
+                              },
                               audio: (matches.opt_present("a"), matches.opt_str("A")),
                               resize: if matches.opt_present("R") {
                                   Some(resize_opt_into_dimensions(matches.opt_str("R")

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.0
+* -T is a new flag which can select which subtitle track to extract (defaults to 0)
+
 ## 0.5.0
 * Flag to not add remove grain
 * Flag to resize video (using lanczos4resize)
