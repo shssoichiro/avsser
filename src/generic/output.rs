@@ -65,21 +65,35 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
             (false, None) => {
                 current_string.push_str(format!("{}(\"{}\")",
                                                 video_filter,
-                                                current_filename.to_str().unwrap())
+                                                current_filename.file_name()
+                                                                .unwrap()
+                                                                .to_str()
+                                                                .unwrap())
                                             .as_ref())
             }
             (true, None) => {
                 current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
                                                 video_filter,
-                                                current_filename.to_str().unwrap(),
-                                                current_filename.to_str().unwrap())
+                                                current_filename.file_name()
+                                                                .unwrap()
+                                                                .to_str()
+                                                                .unwrap(),
+                                                current_filename.file_name()
+                                                                .unwrap()
+                                                                .to_str()
+                                                                .unwrap())
                                             .as_ref())
             }
             (_, Some(x)) => {
                 current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
                                                 video_filter,
-                                                current_filename.to_str().unwrap(),
+                                                current_filename.file_name()
+                                                                .unwrap()
+                                                                .to_str()
+                                                                .unwrap(),
                                                 current_filename.with_extension(x)
+                                                                .file_name()
+                                                                .unwrap()
                                                                 .to_str()
                                                                 .unwrap())
                                             .as_ref())
@@ -101,6 +115,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
         if opts.ass {
             current_string.push_str(format!(".TextSub(\"{}\")",
                                             current_filename.with_extension("ass")
+                                                            .file_name()
+                                                            .unwrap()
                                                             .to_str()
                                                             .unwrap())
                                         .as_ref());

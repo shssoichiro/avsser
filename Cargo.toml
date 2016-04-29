@@ -1,6 +1,6 @@
 [package]
 name = "avsser"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Joshua Holmer <jholmer.in@gmail.com>"]
 description = "A utility for generating AviSynth scripts"
 documentation = "https://github.com/shssoichiro/avsser"

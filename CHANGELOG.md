@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.1
+* Fix bug where AVS script would reference wrong path for input files
+
 ## 0.6.0
 * -T is a new flag which can select which subtitle track to extract (defaults to 0)
 
