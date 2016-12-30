@@ -1,15 +1,16 @@
 [package]
-name = "avsser"
-version = "0.6.1"
 authors = ["Joshua Holmer <jholmer.in@gmail.com>"]
 description = "A utility for generating AviSynth scripts"
 documentation = "https://github.com/shssoichiro/avsser"
 homepage = "https://github.com/shssoichiro/avsser"
-repository = "https://github.com/shssoichiro/avsser"
-readme = "README.md"
 license = "MIT"
+name = "avsser"
+readme = "README.md"
+repository = "https://github.com/shssoichiro/avsser"
+version = "0.6.1"
 
 [dependencies]
 getopts = "0.2"
+lazy_static = "0.2.2"
 regex = "0.1"
 rustc-serialize = "0.3"

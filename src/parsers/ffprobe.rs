@@ -4,8 +4,8 @@ use std::process::Command;
 
 pub fn get_streams_list(path: &Path) -> Result<Vec<HashMap<String, String>>, String> {
     let output = match Command::new("ffprobe")
-                           .args(&["-show_streams", path.to_str().unwrap().as_ref()])
-                           .output() {
+        .args(&["-show_streams", path.to_str().unwrap().as_ref()])
+        .output() {
         Ok(x) => x,
         Err(x) => return Err(format!("{}", x)),
     };

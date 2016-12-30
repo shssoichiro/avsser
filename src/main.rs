@@ -22,8 +22,8 @@ fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
         panic!("Expected exactly 2 arguments (comma-separated) for 'resize'");
     }
 
-    // I'm too lazy to do proper error handling on this project
-    (items[0].parse().unwrap(), items[1].parse().unwrap())
+    (items[0].parse().expect("Invalid width supplied to resizer"),
+     items[1].parse().expect("Invalid height supplied to resizer"))
 }
 
 fn main() {
@@ -70,14 +70,14 @@ fn main() {
         matches.free[0].clone()
     };
 
-    let input = get_list_of_files(Path::new(&input), false).expect("Unable to read input file(s)");
+    let input = get_list_of_files(Path::new(&input), false).unwrap();
     for file in input {
         if determine_input_type(file.as_ref()).is_none() {
             continue;
         }
         let path = PathBuf::from(file);
         if matches.opt_present("f") {
-            extract_fonts(path.as_ref()).ok();
+            extract_fonts(path.as_ref()).unwrap();
         }
         create_avs_script(path.as_ref(),
                           path.with_extension("avs").as_ref(),
@@ -90,7 +90,7 @@ fn main() {
                               ass: matches.opt_present("s"),
                               ass_extract: if matches.opt_present("S") {
                                   if let Some(track) = matches.opt_str("T") {
-                                      Some(track.parse().unwrap())
+                                      Some(track.parse().expect("No argument supplied for track"))
                                   } else {
                                       Some(0)
                                   }
@@ -100,12 +100,12 @@ fn main() {
                               audio: (matches.opt_present("a"), matches.opt_str("A")),
                               resize: if matches.opt_present("R") {
                                   Some(resize_opt_into_dimensions(matches.opt_str("R")
-                                                                         .unwrap()
-                                                                         .as_ref()))
+                                      .expect("No argument supplied for resize")
+                                      .as_ref()))
                               } else {
                                   None
                               },
                           })
-            .ok();
+            .unwrap();
     }
 }

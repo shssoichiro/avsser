@@ -18,10 +18,10 @@ pub fn get_list_of_files(path: &Path, recursive: bool) -> Result<Vec<PathBuf>, S
     if !path.is_dir() {
         return Err("Cannot handle file, perhaps it's a symlink or you don't have proper \
                     permissions?"
-                       .to_owned());
+            .to_owned());
     }
     let mut files: Vec<PathBuf> = vec![];
-    get_recursive_files(&path, &mut files, recursive);
+    get_recursive_files(path, &mut files, recursive);
     Ok(files)
 }
 
