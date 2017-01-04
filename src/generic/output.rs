@@ -21,7 +21,6 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
     };
     let mut iter = 0usize;
     let mut current_breakpoint = None;
-    let mut current_filename = in_file.to_owned();
     let mut segments: Vec<String> = Vec::new();
     let mut cached_uuids: HashMap<[u8; 16], PathBuf> = HashMap::new();
 
@@ -33,35 +32,36 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
                 break;
             }
         }
-        if current_breakpoint.is_some() &&
-           current_breakpoint.clone().unwrap().foreign_uuid.is_some() {
-            let current_uuid = current_breakpoint.clone().unwrap().foreign_uuid.unwrap();
-            if let Some(filename) = cached_uuids.clone().get(&current_uuid) {
-                current_filename = filename.to_owned();
-            } else {
-                for external in in_file.parent().unwrap().read_dir().unwrap() {
-                    let path = external.unwrap().path();
-                    if path.extension().unwrap() != "mkv" || path.as_path() == in_file {
-                        continue;
-                    }
-                    if let Ok(uuid) = super::super::parsers::mkvinfo::get_file_uuid(&path) {
-                        cached_uuids.insert(uuid, path.to_owned());
-                        if uuid == current_uuid {
-                            current_filename = path.to_owned();
-                            break;
+
+        let mut current_filename = in_file.to_owned();
+        if let Some(ref current_breakpoint) = current_breakpoint {
+            if let Some(current_uuid) = current_breakpoint.foreign_uuid {
+                if let Some(filename) = cached_uuids.get(&current_uuid).cloned() {
+                    current_filename = filename.to_owned();
+                } else {
+                    for external in in_file.parent().unwrap().read_dir().unwrap() {
+                        let path = external.unwrap().path();
+                        if path.extension().unwrap() != "mkv" || path.as_path() == in_file {
+                            continue;
+                        }
+                        if let Ok(uuid) = super::super::parsers::mkvinfo::get_file_uuid(&path) {
+                            cached_uuids.insert(uuid, path.to_owned());
+                            if uuid == current_uuid {
+                                current_filename = path.to_owned();
+                                break;
+                            }
                         }
                     }
                 }
+                if current_filename.as_path() == in_file {
+                    return Err("Could not find file linked through ordered chapters.".to_owned());
+                }
             }
-            if current_filename.as_path() == in_file {
-                return Err("Could not find file linked through ordered chapters.".to_owned());
-            }
-        } else {
-            current_filename = in_file.to_owned();
         }
-        let mut current_string = "".to_owned();
+
+        let mut current_string = String::new();
         let video_filter = determine_video_source_filter(&current_filename);
-        match opts.audio.clone() {
+        match opts.audio {
             (false, None) => {
                 current_string.push_str(format!("{}(\"{}\")",
                                                 video_filter,
@@ -84,7 +84,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
                                                     .unwrap())
                     .as_ref())
             }
-            (_, Some(x)) => {
+            (_, Some(ref x)) => {
                 current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
                                                 video_filter,
                                                 current_filename.file_name()
@@ -107,9 +107,10 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
         }
         if let Some(sub_track) = opts.ass_extract {
             if current_filename.with_extension("ass").exists() {
-                println!("Cowardly refusing to overwrite existing subtitles.");
+                println!("Cowardly refusing to overwrite existing subtitles: {}",
+                         current_filename.with_extension("ass").to_string_lossy());
             } else {
-                try!(extract_subtitles(current_filename.as_ref(), sub_track));
+                extract_subtitles(current_filename.as_ref(), sub_track)?;
             }
         }
         if opts.ass {

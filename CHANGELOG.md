@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+* Bump regex crate to 0.2
+* Performance optimizations
+
 ## 0.6.2
 * Error on running external commands instead of silently failing
 * Use lazy_static on regexes for small performance increase

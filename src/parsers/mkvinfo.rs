@@ -33,8 +33,8 @@ pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     for line in String::from_utf8(output.stdout).unwrap().lines() {
         if line.starts_with("Attachment") && (line.contains(".ttf") || line.contains(".otf")) {
             let captures = ATTACHMENT_PATTERN.captures(line).unwrap();
-            attachments.insert(captures.at(1).unwrap().parse::<usize>().unwrap(),
-                               captures.at(2).unwrap().to_owned());
+            attachments.insert(captures[1].parse::<usize>().unwrap(),
+                               captures[2].to_owned());
         }
     }
 
@@ -101,7 +101,7 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
         if video_fps.is_none() {
             if current_section == Some("video".to_owned()) {
                 if let Some(captures) = FPS_PATTERN.captures(line) {
-                    video_fps = Some(captures.at(1).unwrap().parse::<f64>().unwrap());
+                    video_fps = Some(captures[1].parse::<f64>().unwrap());
                 }
             } else if line == "|  + Track type: video" {
                 current_section = Some("video".to_owned());
@@ -127,20 +127,20 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
             if current_chapter.is_some() {
                 if let Some(captures) = TIME_START_REGEX.captures(line) {
                     current_chapter.as_mut().unwrap().start_frame =
-                        timestamp_to_frame_number(captures.at(1).unwrap().parse::<u64>().unwrap(),
-                                                  captures.at(2).unwrap().parse::<u64>().unwrap(),
-                                                  captures.at(3).unwrap().parse::<f64>().unwrap() +
-                                                  captures.at(4).unwrap().parse::<f64>().unwrap() /
+                        timestamp_to_frame_number(captures[1].parse::<u64>().unwrap(),
+                                                  captures[2].parse::<u64>().unwrap(),
+                                                  captures[3].parse::<f64>().unwrap() +
+                                                  captures[4].parse::<f64>().unwrap() /
                                                   1000000000f64,
                                                   video_fps.unwrap());
                     continue;
                 }
                 if let Some(captures) = TIME_END_REGEX.captures(line) {
                     current_chapter.as_mut().unwrap().end_frame =
-                        timestamp_to_frame_number(captures.at(1).unwrap().parse::<u64>().unwrap(),
-                                                  captures.at(2).unwrap().parse::<u64>().unwrap(),
-                                                  captures.at(3).unwrap().parse::<f64>().unwrap() +
-                                                  captures.at(4).unwrap().parse::<f64>().unwrap() /
+                        timestamp_to_frame_number(captures[1].parse::<u64>().unwrap(),
+                                                  captures[2].parse::<u64>().unwrap(),
+                                                  captures[3].parse::<f64>().unwrap() +
+                                                  captures[4].parse::<f64>().unwrap() /
                                                   1000000000f64,
                                                   video_fps.unwrap());
                     continue;

@@ -16,7 +16,7 @@ pub fn get_streams_list(path: &Path) -> Result<Vec<HashMap<String, String>>, Str
     for line in String::from_utf8(output.stdout).unwrap().lines() {
         if line == "[STREAM]" {
             relevant = true;
-            current = HashMap::new();
+            current.clear();
         } else if !relevant {
             continue;
         } else if line == "[/STREAM]" {

@@ -7,10 +7,10 @@ license = "MIT"
 name = "avsser"
 readme = "README.md"
 repository = "https://github.com/shssoichiro/avsser"
-version = "0.6.2"
+version = "0.6.3"
 
 [dependencies]
 getopts = "0.2"
 lazy_static = "0.2.2"
-regex = "0.1"
+regex = "0.2"
 rustc-serialize = "0.3"
