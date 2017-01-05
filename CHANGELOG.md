@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.4
+* Fix bug where fonts with uppercase extensions would not be extracted
+
 ## 0.6.3
 * Bump regex crate to 0.2
 * Performance optimizations

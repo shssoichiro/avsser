@@ -31,7 +31,8 @@ pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
 
     let mut attachments: HashMap<usize, String> = HashMap::new();
     for line in String::from_utf8(output.stdout).unwrap().lines() {
-        if line.starts_with("Attachment") && (line.contains(".ttf") || line.contains(".otf")) {
+        if line.starts_with("Attachment") &&
+           (line.to_lowercase().contains(".ttf") || line.to_lowercase().contains(".otf")) {
             let captures = ATTACHMENT_PATTERN.captures(line).unwrap();
             attachments.insert(captures[1].parse::<usize>().unwrap(),
                                captures[2].to_owned());

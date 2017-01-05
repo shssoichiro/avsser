@@ -1,6 +1,6 @@
 [root]
 name = "avsser"
-version = "0.6.3"
+version = "0.6.4"
 dependencies = [
  "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
