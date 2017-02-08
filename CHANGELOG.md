@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.5
+* Use Spline64Resize instead of Lanczos
+
 ## 0.6.4
 * Fix bug where fonts with uppercase extensions would not be extracted
 
