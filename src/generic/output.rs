@@ -14,7 +14,7 @@ pub struct AvsOptions {
     pub resize: Option<(u32, u32)>,
 }
 
-pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> Result<(), String> {
+pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
     let breakpoints = match super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file) {
         Ok(x) => x,
         Err(x) => return Err(x.to_owned()),
@@ -65,38 +65,43 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
             (false, None) => {
                 current_string.push_str(format!("{}(\"{}\")",
                                                 video_filter,
-                                                current_filename.file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap())
-                    .as_ref())
-            }
-            (true, None) => {
-                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
-                                                video_filter,
-                                                current_filename.file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap(),
-                                                current_filename.file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap())
-                    .as_ref())
-            }
-            (_, Some(ref x)) => {
-                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
-                                                video_filter,
-                                                current_filename.file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap(),
-                                                current_filename.with_extension(x)
+                                                current_filename
                                                     .file_name()
                                                     .unwrap()
                                                     .to_str()
                                                     .unwrap())
-                    .as_ref())
+                                                .as_ref())
+            }
+            (true, None) => {
+                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
+                                                video_filter,
+                                                current_filename
+                                                    .file_name()
+                                                    .unwrap()
+                                                    .to_str()
+                                                    .unwrap(),
+                                                current_filename
+                                                    .file_name()
+                                                    .unwrap()
+                                                    .to_str()
+                                                    .unwrap())
+                                                .as_ref())
+            }
+            (_, Some(ref x)) => {
+                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
+                                                video_filter,
+                                                current_filename
+                                                    .file_name()
+                                                    .unwrap()
+                                                    .to_str()
+                                                    .unwrap(),
+                                                current_filename
+                                                    .with_extension(x)
+                                                    .file_name()
+                                                    .unwrap()
+                                                    .to_str()
+                                                    .unwrap())
+                                                .as_ref())
             }
         }
         if let Some((width, height)) = opts.resize {
@@ -115,18 +120,19 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: AvsOptions) -> R
         }
         if opts.ass {
             current_string.push_str(format!(".TextSub(\"{}\")",
-                                            current_filename.with_extension("ass")
+                                            current_filename
+                                                .with_extension("ass")
                                                 .file_name()
                                                 .unwrap()
                                                 .to_str()
                                                 .unwrap())
-                .as_ref());
+                                            .as_ref());
         }
         if breakpoints.is_some() {
             current_string.push_str(format!(".Trim({},{})",
                                             current_breakpoint.clone().unwrap().start_frame,
                                             current_breakpoint.clone().unwrap().end_frame)
-                .as_ref());
+                                            .as_ref());
             segments.push(current_string);
         } else {
             segments.push(current_string);
@@ -156,14 +162,18 @@ pub fn determine_video_source_filter(path: &Path) -> String {
 
 pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
     match Command::new("ffmpeg")
-        .args(&["-i",
-                in_file.to_str().unwrap().as_ref(),
-                "-map",
-                &format!("0:s:{}", sub_track),
-                "-map_chapters",
-                "-1",
-                in_file.with_extension("ass").to_str().unwrap().as_ref()])
-        .status() {
+              .args(&["-i",
+                      in_file.to_str().unwrap().as_ref(),
+                      "-map",
+                      &format!("0:s:{}", sub_track),
+                      "-map_chapters",
+                      "-1",
+                      in_file
+                          .with_extension("ass")
+                          .to_str()
+                          .unwrap()
+                          .as_ref()])
+              .status() {
         Ok(_) => Ok(()),
         Err(x) => Err(format!("{}", x)),
     }
@@ -178,10 +188,10 @@ pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
         let font_path = in_file.with_file_name(filename);
         if !font_path.exists() {
             match Command::new("mkvextract")
-                .args(&["attachments",
-                        in_file.to_str().unwrap().as_ref(),
-                        format!("{}:{}", id, font_path.to_str().unwrap()).as_ref()])
-                .status() {
+                      .args(&["attachments",
+                              in_file.to_str().unwrap().as_ref(),
+                              format!("{}:{}", id, font_path.to_str().unwrap()).as_ref()])
+                      .status() {
                 Ok(_) => (),
                 Err(x) => return Err(format!("{}", x)),
             };

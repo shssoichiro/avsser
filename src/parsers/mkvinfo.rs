@@ -23,8 +23,8 @@ lazy_static! {
 
 pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     let output = match Command::new("mkvmerge")
-        .args(&["-i", path.to_str().unwrap().as_ref()])
-        .output() {
+              .args(&["-i", path.to_str().unwrap().as_ref()])
+              .output() {
         Ok(x) => x,
         Err(x) => return Err(format!("{}", x)),
     };
@@ -44,8 +44,8 @@ pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
 
 pub fn get_file_uuid(path: &Path) -> Result<[u8; 16], String> {
     let output = match Command::new("mkvinfo")
-        .args(&[path.to_str().unwrap()])
-        .output() {
+              .args(&[path.to_str().unwrap()])
+              .output() {
         Ok(x) => x,
         Err(x) => return Err(x.description().to_owned()),
     };
@@ -85,8 +85,8 @@ pub struct BreakPoint {
 
 pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>, String> {
     let output = match Command::new("mkvinfo")
-        .args(&[path.to_str().unwrap()])
-        .output() {
+              .args(&[path.to_str().unwrap()])
+              .output() {
         Ok(x) => x,
         Err(x) => return Err(x.description().to_owned()),
     };
@@ -119,10 +119,10 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                     chapters.push(current_chapter.unwrap().clone());
                 }
                 current_chapter = Some(BreakPoint {
-                    start_frame: 0,
-                    end_frame: 0,
-                    foreign_uuid: None,
-                });
+                                           start_frame: 0,
+                                           end_frame: 0,
+                                           foreign_uuid: None,
+                                       });
                 continue;
             }
             if current_chapter.is_some() {
