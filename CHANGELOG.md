@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.0
+* Add `--120` option to convert VFR to 120fps CFR
+
 ## 0.6.5
 * Use Spline64Resize instead of Lanczos
 

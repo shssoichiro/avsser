@@ -12,6 +12,7 @@ pub struct AvsOptions {
     pub ass_extract: Option<u8>,
     pub audio: (bool, Option<String>),
     pub resize: Option<(u32, u32)>,
+    pub to_cfr: bool,
 }
 
 pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
@@ -61,25 +62,36 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
 
         let mut current_string = String::new();
         let video_filter = determine_video_source_filter(&current_filename);
+        let mut video_filter_str = format!("{}(\"{}\"{})",
+                                           video_filter,
+                                           current_filename.file_name().unwrap().to_str().unwrap(),
+                                           if opts.to_cfr {
+                                               format!(", timecodes=\"{}\"",
+                                                       current_filename
+                                                           .with_extension("timecodes.txt")
+                                                           .file_name()
+                                                           .unwrap()
+                                                           .to_str()
+                                                           .unwrap())
+                                           } else {
+                                               String::new()
+                                           });
+        if opts.to_cfr {
+            // This needs to happen before the `AudioDub`
+            // Also, `vfrtocfr` requires the full path to the timecodes file
+            video_filter_str
+                .push_str(format!(".vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
+                                  current_filename
+                                      .with_extension("timecodes.txt")
+                                      .to_str()
+                                      .unwrap())
+                                  .as_ref());
+        }
         match opts.audio {
-            (false, None) => {
-                current_string.push_str(format!("{}(\"{}\")",
-                                                video_filter,
-                                                current_filename
-                                                    .file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap())
-                                                .as_ref())
-            }
+            (false, None) => current_string.push_str(&video_filter_str),
             (true, None) => {
-                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
-                                                video_filter,
-                                                current_filename
-                                                    .file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap(),
+                current_string.push_str(format!("AudioDub({}, FFAudioSource(\"{}\"))",
+                                                video_filter_str,
                                                 current_filename
                                                     .file_name()
                                                     .unwrap()
@@ -88,13 +100,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                                                 .as_ref())
             }
             (_, Some(ref x)) => {
-                current_string.push_str(format!("AudioDub({}(\"{}\"), FFAudioSource(\"{}\"))",
-                                                video_filter,
-                                                current_filename
-                                                    .file_name()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap(),
+                current_string.push_str(format!("AudioDub({}, FFAudioSource(\"{}\"))",
+                                                video_filter_str,
                                                 current_filename
                                                     .with_extension(x)
                                                     .file_name()

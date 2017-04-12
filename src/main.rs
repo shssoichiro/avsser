@@ -58,6 +58,9 @@ fn main() {
                 "resize video to the given width and height",
                 "w,h");
     opts.optflag("G", "keep-grain", "don't add a RemoveGrain(1) filter");
+    opts.optflag("",
+                 "120",
+                 "convert VFR to 120fps CFR (only works with MKVs)");
 
     let matches = match opts.parse(&args) {
         Ok(m) => m,
@@ -109,6 +112,7 @@ fn main() {
                                } else {
                                    None
                                },
+                               to_cfr: matches.opt_present("120"),
                            })
                 .unwrap();
     }
