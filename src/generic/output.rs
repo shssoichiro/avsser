@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use uuid::Uuid;
 use super::input::InputTypes;
 
 pub struct AvsOptions {
@@ -23,7 +24,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
     let mut iter = 0usize;
     let mut current_breakpoint = None;
     let mut segments: Vec<String> = Vec::new();
-    let mut cached_uuids: HashMap<[u8; 16], PathBuf> = HashMap::new();
+    let mut cached_uuids: HashMap<Uuid, PathBuf> = HashMap::new();
 
     loop {
         if breakpoints.is_some() {

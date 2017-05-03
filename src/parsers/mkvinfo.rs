@@ -3,7 +3,7 @@ use std::error::Error;
 use std::path::Path;
 use std::process::Command;
 use regex::Regex;
-use rustc_serialize::hex::FromHex;
+use uuid::Uuid;
 
 lazy_static! {
     static ref ATTACHMENT_PATTERN: Regex = Regex::new(r"Attachment ID (\d+): .* file name '(.+)'").unwrap();
@@ -42,7 +42,7 @@ pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     Ok(attachments)
 }
 
-pub fn get_file_uuid(path: &Path) -> Result<[u8; 16], String> {
+pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
     let output = match Command::new("mkvinfo")
               .args(&[path.to_str().unwrap()])
               .output() {
@@ -53,22 +53,14 @@ pub fn get_file_uuid(path: &Path) -> Result<[u8; 16], String> {
     let output = String::from_utf8(output.stdout).unwrap();
     for line in output.lines() {
         if let Some(captures) = SEGMENT_UUID_REGEX.captures(line) {
-            return Ok([captures[1].from_hex().unwrap()[0],
-                       captures[2].from_hex().unwrap()[0],
-                       captures[3].from_hex().unwrap()[0],
-                       captures[4].from_hex().unwrap()[0],
-                       captures[5].from_hex().unwrap()[0],
-                       captures[6].from_hex().unwrap()[0],
-                       captures[7].from_hex().unwrap()[0],
-                       captures[8].from_hex().unwrap()[0],
-                       captures[9].from_hex().unwrap()[0],
-                       captures[10].from_hex().unwrap()[0],
-                       captures[11].from_hex().unwrap()[0],
-                       captures[12].from_hex().unwrap()[0],
-                       captures[13].from_hex().unwrap()[0],
-                       captures[14].from_hex().unwrap()[0],
-                       captures[15].from_hex().unwrap()[0],
-                       captures[16].from_hex().unwrap()[0]]);
+            return Ok(Uuid::parse_str(&captures
+                                           .iter()
+                                           .skip(1)
+                                           .take(16)
+                                           .map(|m| m.unwrap().as_str())
+                                           .collect::<Vec<&str>>()
+                                           .concat())
+                              .unwrap());
         }
     }
 
@@ -80,7 +72,7 @@ pub fn get_file_uuid(path: &Path) -> Result<[u8; 16], String> {
 pub struct BreakPoint {
     pub start_frame: u64,
     pub end_frame: u64,
-    pub foreign_uuid: Option<[u8; 16]>,
+    pub foreign_uuid: Option<Uuid>,
 }
 
 pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>, String> {
@@ -148,22 +140,14 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                 }
                 if let Some(captures) = FOREIGN_UUID_REGEX.captures(line) {
                     current_chapter.as_mut().unwrap().foreign_uuid =
-                        Some([captures[1].from_hex().unwrap()[0],
-                              captures[2].from_hex().unwrap()[0],
-                              captures[3].from_hex().unwrap()[0],
-                              captures[4].from_hex().unwrap()[0],
-                              captures[5].from_hex().unwrap()[0],
-                              captures[6].from_hex().unwrap()[0],
-                              captures[7].from_hex().unwrap()[0],
-                              captures[8].from_hex().unwrap()[0],
-                              captures[9].from_hex().unwrap()[0],
-                              captures[10].from_hex().unwrap()[0],
-                              captures[11].from_hex().unwrap()[0],
-                              captures[12].from_hex().unwrap()[0],
-                              captures[13].from_hex().unwrap()[0],
-                              captures[14].from_hex().unwrap()[0],
-                              captures[15].from_hex().unwrap()[0],
-                              captures[16].from_hex().unwrap()[0]]);
+                        Some(Uuid::parse_str(&captures
+                                                  .iter()
+                                                  .skip(1)
+                                                  .take(16)
+                                                  .map(|m| m.unwrap().as_str())
+                                                  .collect::<Vec<&str>>()
+                                                  .concat())
+                                     .unwrap());
                     continue;
                 }
             }
