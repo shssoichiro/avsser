@@ -84,6 +84,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                 .push_str(format!(".vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
                                   current_filename
                                       .with_extension("timecodes.txt")
+                                      .canonicalize()
+                                      .unwrap()
                                       .to_str()
                                       .unwrap())
                                   .as_ref());
