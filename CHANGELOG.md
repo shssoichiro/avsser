@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.2
+* Fix bug in `--120` option related to relative paths 
+
 ## 0.7.1
 * Remove dependency on rustc-serialize
 
