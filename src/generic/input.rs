@@ -41,11 +41,7 @@ fn get_recursive_files(path: &Path, mut files: &mut Vec<PathBuf>, recursive: boo
 pub fn determine_input_type(path: &Path) -> Option<InputTypes> {
     // This is simplistic and assumes that the extension is a source of truth
     // TODO: Make this look at the container headers instead
-    let extension = path.extension()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_lowercase();
+    let extension = path.extension().unwrap().to_str().unwrap().to_lowercase();
     match extension.as_ref() {
         "mkv" => Some(InputTypes::Matroska),
         "mp4" => Some(InputTypes::Mpeg4),

@@ -63,20 +63,25 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
 
         let mut current_string = String::new();
         let video_filter = determine_video_source_filter(&current_filename);
-        let mut video_filter_str = format!("{}(\"{}\"{})",
-                                           video_filter,
-                                           current_filename.file_name().unwrap().to_str().unwrap(),
-                                           if opts.to_cfr {
-                                               format!(", timecodes=\"{}\"",
-                                                       current_filename
-                                                           .with_extension("timecodes.txt")
-                                                           .file_name()
-                                                           .unwrap()
-                                                           .to_str()
-                                                           .unwrap())
-                                           } else {
-                                               String::new()
-                                           });
+        let timecodes_path = current_filename.with_extension("timecodes.txt");
+        if opts.to_cfr && !timecodes_path.exists() {
+            File::create(timecodes_path).ok();
+        }
+        let mut video_filter_str =
+            format!("{}(\"{}\"{})",
+                    video_filter,
+                    current_filename.canonicalize().unwrap().to_str().unwrap(),
+                    if opts.to_cfr {
+                        format!(", timecodes=\"{}\"",
+                                current_filename
+                                    .with_extension("timecodes.txt")
+                                    .canonicalize()
+                                    .unwrap()
+                                    .to_str()
+                                    .unwrap())
+                    } else {
+                        String::new()
+                    });
         if opts.to_cfr {
             // This needs to happen before the `AudioDub`
             // Also, `vfrtocfr` requires the full path to the timecodes file
@@ -96,7 +101,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                 current_string.push_str(format!("AudioDub({}, FFAudioSource(\"{}\"))",
                                                 video_filter_str,
                                                 current_filename
-                                                    .file_name()
+                                                    .canonicalize()
                                                     .unwrap()
                                                     .to_str()
                                                     .unwrap())
@@ -107,7 +112,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                                                 video_filter_str,
                                                 current_filename
                                                     .with_extension(x)
-                                                    .file_name()
+                                                    .canonicalize()
                                                     .unwrap()
                                                     .to_str()
                                                     .unwrap())
@@ -132,7 +137,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             current_string.push_str(format!(".TextSub(\"{}\")",
                                             current_filename
                                                 .with_extension("ass")
-                                                .file_name()
+                                                .canonicalize()
                                                 .unwrap()
                                                 .to_str()
                                                 .unwrap())
@@ -178,11 +183,7 @@ pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
                       &format!("0:s:{}", sub_track),
                       "-map_chapters",
                       "-1",
-                      in_file
-                          .with_extension("ass")
-                          .to_str()
-                          .unwrap()
-                          .as_ref()])
+                      in_file.with_extension("ass").to_str().unwrap().as_ref()])
               .status() {
         Ok(_) => Ok(()),
         Err(x) => Err(format!("{}", x)),
