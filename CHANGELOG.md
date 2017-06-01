@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.7.3
+- Fix more bugs in `--120` option related to `canonicalize` function
+
 ## 0.7.2
 * Fix bug in `--120` option related to relative paths 
 
