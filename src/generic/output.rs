@@ -14,6 +14,7 @@ pub struct AvsOptions {
     pub audio: (bool, Option<String>),
     pub resize: Option<(u32, u32)>,
     pub to_cfr: bool,
+    pub hi10p: bool,
 }
 
 pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
@@ -62,7 +63,11 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         }
 
         let mut current_string = String::new();
-        let video_filter = determine_video_source_filter(&current_filename);
+        let video_filter = if opts.hi10p {
+            "LWLibAvVideoSource"
+        } else {
+            determine_video_source_filter(&current_filename)
+        };
         let timecodes_path = current_filename.with_extension("timecodes.txt");
         if opts.to_cfr && !timecodes_path.exists() {
             File::create(timecodes_path).ok();
@@ -82,6 +87,9 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                     } else {
                         String::new()
                     });
+        if opts.hi10p {
+            video_filter_str.push_str(".f3kdb(input_depth=10, input_mode=2, output_depth=8)");
+        }
         if opts.to_cfr {
             // This needs to happen before the `AudioDub`
             // Also, `vfrtocfr` requires the full path to the timecodes file
@@ -127,8 +135,10 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         }
         if let Some(sub_track) = opts.ass_extract {
             if current_filename.with_extension("ass").exists() {
-                println!("Cowardly refusing to overwrite existing subtitles: {}",
-                         current_filename.with_extension("ass").to_string_lossy());
+                println!(
+                    "Cowardly refusing to overwrite existing subtitles: {}",
+                    current_filename.with_extension("ass").to_string_lossy()
+                );
             } else {
                 extract_subtitles(current_filename.as_ref(), sub_track)?;
             }
@@ -144,10 +154,13 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                                             .as_ref());
         }
         if breakpoints.is_some() {
-            current_string.push_str(format!(".Trim({},{})",
-                                            current_breakpoint.clone().unwrap().start_frame,
-                                            current_breakpoint.clone().unwrap().end_frame)
-                                            .as_ref());
+            current_string.push_str(
+                format!(
+                    ".Trim({},{})",
+                    current_breakpoint.clone().unwrap().start_frame,
+                    current_breakpoint.clone().unwrap().end_frame
+                ).as_ref(),
+            );
             segments.push(current_string);
         } else {
             segments.push(current_string);
@@ -166,11 +179,11 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
     }
 }
 
-pub fn determine_video_source_filter(path: &Path) -> String {
+pub fn determine_video_source_filter(path: &Path) -> &'static str {
     match super::input::determine_input_type(path) {
-        Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source".to_owned(),
-        Some(InputTypes::DgAvc) => "AVCSource".to_owned(),
-        Some(_) => "FFVideoSource".to_owned(),
+        Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source",
+        Some(InputTypes::DgAvc) => "AVCSource",
+        Some(_) => "FFVideoSource",
         None => panic!("Invalid input type"),
     }
 }
@@ -199,10 +212,13 @@ pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
         let font_path = in_file.with_file_name(filename);
         if !font_path.exists() {
             match Command::new("mkvextract")
-                      .args(&["attachments",
-                              in_file.to_str().unwrap().as_ref(),
-                              format!("{}:{}", id, font_path.to_str().unwrap()).as_ref()])
-                      .status() {
+                .args(&[
+                    "attachments",
+                    in_file.to_str().unwrap().as_ref(),
+                    format!("{}:{}", id, font_path.to_str().unwrap()).as_ref(),
+                ])
+                .status()
+            {
                 Ok(_) => (),
                 Err(x) => return Err(format!("{}", x)),
             };

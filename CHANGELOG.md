@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.0
+* Add `--10` option to handle Hi10p video
+
 ## 0.7.2
 * Fix bug in `--120` option related to relative paths 
 

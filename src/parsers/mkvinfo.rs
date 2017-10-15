@@ -23,19 +23,23 @@ lazy_static! {
 
 pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     let output = match Command::new("mkvmerge")
-              .args(&["-i", path.to_str().unwrap().as_ref()])
-              .output() {
+        .args(&["-i", path.to_str().unwrap().as_ref()])
+        .output()
+    {
         Ok(x) => x,
         Err(x) => return Err(format!("{}", x)),
     };
 
     let mut attachments: HashMap<usize, String> = HashMap::new();
     for line in String::from_utf8(output.stdout).unwrap().lines() {
-        if line.starts_with("Attachment") &&
-           (line.to_lowercase().contains(".ttf") || line.to_lowercase().contains(".otf")) {
+        if line.starts_with("Attachment")
+            && (line.to_lowercase().contains(".ttf") || line.to_lowercase().contains(".otf"))
+        {
             let captures = ATTACHMENT_PATTERN.captures(line).unwrap();
-            attachments.insert(captures[1].parse::<usize>().unwrap(),
-                               captures[2].to_owned());
+            attachments.insert(
+                captures[1].parse::<usize>().unwrap(),
+                captures[2].to_owned(),
+            );
         }
     }
 
@@ -44,8 +48,9 @@ pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
 
 pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
     let output = match Command::new("mkvinfo")
-              .args(&[path.to_str().unwrap()])
-              .output() {
+        .args(&[path.to_str().unwrap()])
+        .output()
+    {
         Ok(x) => x,
         Err(x) => return Err(x.description().to_owned()),
     };
@@ -64,11 +69,13 @@ pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
         }
     }
 
-    Err(format!("No uuid found in {}, is this a valid Matroska file?",
-                path.to_str().unwrap()))
+    Err(format!(
+        "No uuid found in {}, is this a valid Matroska file?",
+        path.to_str().unwrap()
+    ))
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct BreakPoint {
     pub start_frame: u64,
     pub end_frame: u64,
@@ -77,8 +84,9 @@ pub struct BreakPoint {
 
 pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>, String> {
     let output = match Command::new("mkvinfo")
-              .args(&[path.to_str().unwrap()])
-              .output() {
+        .args(&[path.to_str().unwrap()])
+        .output()
+    {
         Ok(x) => x,
         Err(x) => return Err(x.description().to_owned()),
     };
@@ -111,31 +119,31 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                     chapters.push(current_chapter.unwrap().clone());
                 }
                 current_chapter = Some(BreakPoint {
-                                           start_frame: 0,
-                                           end_frame: 0,
-                                           foreign_uuid: None,
-                                       });
+                    start_frame: 0,
+                    end_frame: 0,
+                    foreign_uuid: None,
+                });
                 continue;
             }
             if current_chapter.is_some() {
                 if let Some(captures) = TIME_START_REGEX.captures(line) {
-                    current_chapter.as_mut().unwrap().start_frame =
-                        timestamp_to_frame_number(captures[1].parse::<u64>().unwrap(),
-                                                  captures[2].parse::<u64>().unwrap(),
-                                                  captures[3].parse::<f64>().unwrap() +
-                                                  captures[4].parse::<f64>().unwrap() /
-                                                  1000000000f64,
-                                                  video_fps.unwrap());
+                    current_chapter.as_mut().unwrap().start_frame = timestamp_to_frame_number(
+                        captures[1].parse::<u64>().unwrap(),
+                        captures[2].parse::<u64>().unwrap(),
+                        captures[3].parse::<f64>().unwrap()
+                            + captures[4].parse::<f64>().unwrap() / 1_000_000_000f64,
+                        video_fps.unwrap(),
+                    );
                     continue;
                 }
                 if let Some(captures) = TIME_END_REGEX.captures(line) {
-                    current_chapter.as_mut().unwrap().end_frame =
-                        timestamp_to_frame_number(captures[1].parse::<u64>().unwrap(),
-                                                  captures[2].parse::<u64>().unwrap(),
-                                                  captures[3].parse::<f64>().unwrap() +
-                                                  captures[4].parse::<f64>().unwrap() /
-                                                  1000000000f64,
-                                                  video_fps.unwrap());
+                    current_chapter.as_mut().unwrap().end_frame = timestamp_to_frame_number(
+                        captures[1].parse::<u64>().unwrap(),
+                        captures[2].parse::<u64>().unwrap(),
+                        captures[3].parse::<f64>().unwrap()
+                            + captures[4].parse::<f64>().unwrap() / 1_000_000_000f64,
+                        video_fps.unwrap(),
+                    );
                     continue;
                 }
                 if let Some(captures) = FOREIGN_UUID_REGEX.captures(line) {

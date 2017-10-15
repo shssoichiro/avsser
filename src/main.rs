@@ -59,6 +59,9 @@ fn main() {
     opts.optflag("",
                  "120",
                  "convert VFR to 120fps CFR (only works with MKVs)");
+    opts.optflag("",
+                 "10",
+                 "decode Hi10p video");
 
     let matches = match opts.parse(&args) {
         Ok(m) => m,
@@ -74,6 +77,10 @@ fn main() {
     } else {
         matches.free[0].clone()
     };
+    if matches.opt_present("120") && matches.opt_present("10") {
+        println!("--120 and --10 cannot currently be used together. Sorry.");
+        return;
+    }
 
     let input = get_list_of_files(Path::new(&input), false).unwrap();
     for file in input {
@@ -112,6 +119,7 @@ fn main() {
                                   None
                               },
                               to_cfr: matches.opt_present("120"),
+                              hi10p: matches.opt_present("10")
                           })
                 .unwrap();
     }
