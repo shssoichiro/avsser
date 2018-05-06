@@ -90,7 +90,10 @@ pub struct BreakPoint {
     pub foreign_uuid: Option<Uuid>,
 }
 
-pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>, String> {
+pub fn get_ordered_chapters_list(
+    path: &Path,
+    force_120_fps: bool,
+) -> Result<Option<Vec<BreakPoint>>, String> {
     let output = match Command::new("mkvinfo")
         .args(&[path.to_str().unwrap()])
         .output()
@@ -101,7 +104,11 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
 
     let output = String::from_utf8(output.stdout).unwrap();
     let mut chapters: Vec<BreakPoint> = Vec::new();
-    let mut video_fps: Option<f64> = None;
+    let mut video_fps: Option<f64> = if force_120_fps {
+        Some(120000. / 1001.)
+    } else {
+        None
+    };
     let mut current_section: Option<SectionType> = None;
     let mut current_chapter: Option<BreakPoint> = None;
     let mut ordered_chapters = false;

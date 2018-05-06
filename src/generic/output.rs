@@ -18,10 +18,8 @@ pub struct AvsOptions {
 }
 
 pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
-    let breakpoints = match super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file) {
-        Ok(x) => x,
-        Err(x) => return Err(x.to_owned()),
-    };
+    let breakpoints =
+        super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file, opts.to_cfr)?;
     let mut iter = 0usize;
     let mut current_breakpoint = None;
     let mut segments: Vec<String> = Vec::new();
