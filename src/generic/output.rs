@@ -26,6 +26,7 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
     let mut current_breakpoint = None;
     let mut segments: Vec<String> = Vec::new();
     let mut cached_uuids: HashMap<Uuid, PathBuf> = HashMap::new();
+    let mut preloads: HashMap<PathBuf, String> = HashMap::new();
 
     loop {
         if breakpoints.is_some() {
@@ -63,6 +64,21 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         }
 
         let mut current_string = String::new();
+        if opts.to_cfr && !preloads.contains_key(&current_filename) {
+            preloads.insert(
+                current_filename.clone(),
+                format!(
+                    "FFVideoSource(\"{}\", timecodes=\"{}\")",
+                    current_filename.canonicalize().unwrap().to_str().unwrap(),
+                    current_filename
+                        .with_extension("timecodes.txt")
+                        .canonicalize()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                ),
+            );
+        }
         let video_filter = if opts.hi10p {
             "LWLibAvVideoSource"
         } else {
@@ -73,22 +89,9 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             File::create(timecodes_path).ok();
         }
         let mut video_filter_str = format!(
-            "{}(\"{}\"{})",
+            "{}(\"{}\")",
             video_filter,
-            current_filename.canonicalize().unwrap().to_str().unwrap(),
-            if opts.to_cfr {
-                format!(
-                    ", timecodes=\"{}\"",
-                    current_filename
-                        .with_extension("timecodes.txt")
-                        .canonicalize()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                )
-            } else {
-                String::new()
-            }
+            current_filename.canonicalize().unwrap().to_str().unwrap()
         );
         if opts.hi10p {
             video_filter_str.push_str(".f3kdb(input_depth=10, input_mode=2, output_depth=8)");
@@ -179,10 +182,17 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         Err(x) => return Err(format!("{}", x)),
     };
 
-    match writeln!(&mut script, "{}", segments.join("\\\n++ ")) {
-        Ok(_) => Ok(()),
-        Err(x) => Err(format!("{}", x)),
-    }
+    writeln!(
+        &mut script,
+        "{}",
+        preloads
+            .values()
+            .cloned()
+            .collect::<Vec<String>>()
+            .join("\n")
+    ).map_err(|e| e.to_string())?;
+
+    writeln!(&mut script, "{}", segments.join("\\\n++ ")).map_err(|e| e.to_string())
 }
 
 pub fn determine_video_source_filter(path: &Path) -> &'static str {

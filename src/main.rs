@@ -89,10 +89,6 @@ fn main() {
     } else {
         matches.free[0].clone()
     };
-    if matches.opt_present("120") && matches.opt_present("10") {
-        println!("--120 and --10 cannot currently be used together. Sorry.");
-        return;
-    }
 
     let input = get_list_of_files(Path::new(&input), false).unwrap();
     for file in input {
