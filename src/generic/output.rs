@@ -72,60 +72,63 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         if opts.to_cfr && !timecodes_path.exists() {
             File::create(timecodes_path).ok();
         }
-        let mut video_filter_str =
-            format!("{}(\"{}\"{})",
-                    video_filter,
-                    current_filename.canonicalize().unwrap().to_str().unwrap(),
-                    if opts.to_cfr {
-                        format!(", timecodes=\"{}\"",
-                                current_filename
-                                    .with_extension("timecodes.txt")
-                                    .canonicalize()
-                                    .unwrap()
-                                    .to_str()
-                                    .unwrap())
-                    } else {
-                        String::new()
-                    });
+        let mut video_filter_str = format!(
+            "{}(\"{}\"{})",
+            video_filter,
+            current_filename.canonicalize().unwrap().to_str().unwrap(),
+            if opts.to_cfr {
+                format!(
+                    ", timecodes=\"{}\"",
+                    current_filename
+                        .with_extension("timecodes.txt")
+                        .canonicalize()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                )
+            } else {
+                String::new()
+            }
+        );
         if opts.hi10p {
             video_filter_str.push_str(".f3kdb(input_depth=10, input_mode=2, output_depth=8)");
         }
         if opts.to_cfr {
             // This needs to happen before the `AudioDub`
             // Also, `vfrtocfr` requires the full path to the timecodes file
-            video_filter_str
-                .push_str(format!(".vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
-                                  current_filename
-                                      .with_extension("timecodes.txt")
-                                      .canonicalize()
-                                      .unwrap()
-                                      .to_str()
-                                      .unwrap())
-                                  .as_ref());
+            video_filter_str.push_str(
+                format!(
+                    ".vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
+                    current_filename
+                        .with_extension("timecodes.txt")
+                        .canonicalize()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                ).as_ref(),
+            );
         }
         match opts.audio {
             (false, None) => current_string.push_str(&video_filter_str),
-            (true, None) => {
-                current_string.push_str(format!("AudioDub({}, FFAudioSource(\"{}\"))",
-                                                video_filter_str,
-                                                current_filename
-                                                    .canonicalize()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap())
-                                                .as_ref())
-            }
-            (_, Some(ref x)) => {
-                current_string.push_str(format!("AudioDub({}, FFAudioSource(\"{}\"))",
-                                                video_filter_str,
-                                                current_filename
-                                                    .with_extension(x)
-                                                    .canonicalize()
-                                                    .unwrap()
-                                                    .to_str()
-                                                    .unwrap())
-                                                .as_ref())
-            }
+            (true, None) => current_string.push_str(
+                format!(
+                    "AudioDub({}, FFAudioSource(\"{}\"))",
+                    video_filter_str,
+                    current_filename.canonicalize().unwrap().to_str().unwrap()
+                ).as_ref(),
+            ),
+            (_, Some(ref x)) => current_string.push_str(
+                format!(
+                    "AudioDub({}, FFAudioSource(\"{}\"))",
+                    video_filter_str,
+                    current_filename
+                        .with_extension(x)
+                        .canonicalize()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                ).as_ref(),
+            ),
         }
         if let Some((width, height)) = opts.resize {
             current_string.push_str(format!(".Spline64Resize({}, {})", width, height).as_ref());
@@ -144,14 +147,17 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             }
         }
         if opts.ass {
-            current_string.push_str(format!(".TextSub(\"{}\")",
-                                            current_filename
-                                                .with_extension("ass")
-                                                .canonicalize()
-                                                .unwrap()
-                                                .to_str()
-                                                .unwrap())
-                                            .as_ref());
+            current_string.push_str(
+                format!(
+                    ".TextSub(\"{}\")",
+                    current_filename
+                        .with_extension("ass")
+                        .canonicalize()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                ).as_ref(),
+            );
         }
         if breakpoints.is_some() {
             current_string.push_str(
@@ -190,14 +196,17 @@ pub fn determine_video_source_filter(path: &Path) -> &'static str {
 
 pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
     match Command::new("ffmpeg")
-              .args(&["-i",
-                      in_file.to_str().unwrap().as_ref(),
-                      "-map",
-                      &format!("0:s:{}", sub_track),
-                      "-map_chapters",
-                      "-1",
-                      in_file.with_extension("ass").to_str().unwrap().as_ref()])
-              .status() {
+        .args(&[
+            "-i",
+            in_file.to_str().unwrap().as_ref(),
+            "-map",
+            &format!("0:s:{}", sub_track),
+            "-map_chapters",
+            "-1",
+            in_file.with_extension("ass").to_str().unwrap().as_ref(),
+        ])
+        .status()
+    {
         Ok(_) => Ok(()),
         Err(x) => Err(format!("{}", x)),
     }

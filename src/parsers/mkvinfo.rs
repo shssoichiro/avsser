@@ -12,14 +12,16 @@ lazy_static! {
     ).unwrap();
     static ref FPS_PATTERN: Regex = Regex::new(r"Default duration:.+\((\d+\.\d+) frames/fields per second")
         .unwrap();
-    static ref TIME_START_REGEX: Regex = Regex::new(r"ChapterTimeStart: (\d{2}):(\d{2}):(\d{2}).(\d{9})")
+    static ref EDITION_FLAG_ORDERED_REGEX: Regex = Regex::new(r"Edition ?[fF]lag ?[oO]rdered: 1").unwrap();
+    static ref CHAPTER_ATOM_REGEX: Regex = Regex::new(r"Chapter ?[aA]tom").unwrap();
+    static ref TIME_START_REGEX: Regex = Regex::new(r"Chapter ?[tT]ime ?[sS]tart: (\d{2}):(\d{2}):(\d{2}).(\d{9})")
         .unwrap();
-    static ref TIME_END_REGEX: Regex = Regex::new(r"ChapterTimeEnd: (\d{2}):(\d{2}):(\d{2}).(\d{9})").unwrap();
+    static ref TIME_END_REGEX: Regex = Regex::new(r"Chapter ?[tT]ime ?[eE]nd: (\d{2}):(\d{2}):(\d{2}).(\d{9})").unwrap();
     static ref FOREIGN_UUID_REGEX: Regex = Regex::new(
-        r"ChapterSegmentUID: length 16, data: 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2})"
+        r"Chapter ?[sS]egment ?UID: length 16, data: 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2}) 0x([0-9a-f]{2})"
     ).unwrap();
+    static ref EBML_VOID_REGEX: Regex = Regex::new(r"(?:Ebml|EBML) ?[vV]oid").unwrap();
 }
-
 
 pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     let output = match Command::new("mkvmerge")
@@ -59,13 +61,13 @@ pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
     for line in output.lines() {
         if let Some(captures) = SEGMENT_UUID_REGEX.captures(line) {
             return Ok(Uuid::parse_str(&captures
-                                           .iter()
-                                           .skip(1)
-                                           .take(16)
-                                           .map(|m| m.unwrap().as_str())
-                                           .collect::<Vec<&str>>()
-                                           .concat())
-                              .unwrap());
+                .iter()
+                .skip(1)
+                .take(16)
+                .map(|m| m.unwrap().as_str())
+                .collect::<Vec<&str>>()
+                .concat())
+                .unwrap());
         }
     }
 
@@ -73,6 +75,12 @@ pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
         "No uuid found in {}, is this a valid Matroska file?",
         path.to_str().unwrap()
     ))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum SectionType {
+    Video,
+    Chapters,
 }
 
 #[derive(Clone, Debug)]
@@ -94,27 +102,27 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
     let output = String::from_utf8(output.stdout).unwrap();
     let mut chapters: Vec<BreakPoint> = Vec::new();
     let mut video_fps: Option<f64> = None;
-    let mut current_section: Option<String> = None;
+    let mut current_section: Option<SectionType> = None;
     let mut current_chapter: Option<BreakPoint> = None;
     let mut ordered_chapters = false;
     for line in output.lines() {
         // Find video_fps
         if video_fps.is_none() {
-            if current_section == Some("video".to_owned()) {
+            if current_section == Some(SectionType::Video) {
                 if let Some(captures) = FPS_PATTERN.captures(line) {
                     video_fps = Some(captures[1].parse::<f64>().unwrap());
                 }
             } else if line == "|  + Track type: video" {
-                current_section = Some("video".to_owned());
+                current_section = Some(SectionType::Video);
             }
             continue;
         }
-        if current_section == Some("chapters".to_owned()) {
-            if line == "|  + EditionFlagOrdered: 1" {
+        if current_section == Some(SectionType::Chapters) {
+            if EDITION_FLAG_ORDERED_REGEX.is_match(line) {
                 ordered_chapters = true;
                 continue;
             }
-            if line == "|  + ChapterAtom" {
+            if CHAPTER_ATOM_REGEX.is_match(line) {
                 if current_chapter.is_some() {
                     chapters.push(current_chapter.unwrap().clone());
                 }
@@ -147,26 +155,27 @@ pub fn get_ordered_chapters_list(path: &Path) -> Result<Option<Vec<BreakPoint>>,
                     continue;
                 }
                 if let Some(captures) = FOREIGN_UUID_REGEX.captures(line) {
-                    current_chapter.as_mut().unwrap().foreign_uuid =
-                        Some(Uuid::parse_str(&captures
-                                                  .iter()
-                                                  .skip(1)
-                                                  .take(16)
-                                                  .map(|m| m.unwrap().as_str())
-                                                  .collect::<Vec<&str>>()
-                                                  .concat())
-                                     .unwrap());
+                    current_chapter.as_mut().unwrap().foreign_uuid = Some(
+                        Uuid::parse_str(&captures
+                            .iter()
+                            .skip(1)
+                            .take(16)
+                            .map(|m| m.unwrap().as_str())
+                            .collect::<Vec<&str>>()
+                            .concat())
+                            .unwrap(),
+                    );
                     continue;
                 }
             }
-            if line.starts_with("|+ EbmlVoid") {
+            if EBML_VOID_REGEX.is_match(line) {
                 if current_chapter.is_some() {
                     chapters.push(current_chapter.unwrap().clone());
                 }
                 break;
             }
         } else if line == "|+ Chapters" {
-            current_section = Some("chapters".to_owned());
+            current_section = Some(SectionType::Chapters);
             continue;
         }
     }

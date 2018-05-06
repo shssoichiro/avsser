@@ -22,10 +22,12 @@ fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
         panic!("Expected exactly 2 arguments (comma-separated) for 'resize'");
     }
 
-    (items[0].parse().expect("Invalid width supplied to resizer"),
-     items[1]
-         .parse()
-         .expect("Invalid height supplied to resizer"))
+    (
+        items[0].parse().expect("Invalid width supplied to resizer"),
+        items[1]
+            .parse()
+            .expect("Invalid height supplied to resizer"),
+    )
 }
 
 fn main() {
@@ -34,34 +36,44 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
-    opts.optflag("s",
-                 "subtitle",
-                 "include subtitles with TextSub(input_filename.ass)");
-    opts.optflag("S",
-                 "sub-extract",
-                 "extract subtitles from the input files (defaults to track 0)");
-    opts.optopt("T",
-                "sub-track",
-                "select which subtitle track to extract, 0-indexed (does nothing without -S)",
-                "TRACK");
+    opts.optflag(
+        "s",
+        "subtitle",
+        "include subtitles with TextSub(input_filename.ass)",
+    );
+    opts.optflag(
+        "S",
+        "sub-extract",
+        "extract subtitles from the input files (defaults to track 0)",
+    );
+    opts.optopt(
+        "T",
+        "sub-track",
+        "select which subtitle track to extract, 0-indexed (does nothing without -S)",
+        "TRACK",
+    );
     opts.optflag("a", "audio", "include audio from video");
-    opts.optopt("A",
-                "audio-ext",
-                "include audio from separate file with extension (takes precedence over audio \
-                 from video)",
-                "EXT");
+    opts.optopt(
+        "A",
+        "audio-ext",
+        "include audio from separate file with extension (takes precedence over audio \
+         from video)",
+        "EXT",
+    );
     opts.optflag("f", "fonts", "extract fonts from mkv container");
-    opts.optopt("R",
-                "resize",
-                "resize video to the given width and height",
-                "w,h");
+    opts.optopt(
+        "R",
+        "resize",
+        "resize video to the given width and height",
+        "w,h",
+    );
     opts.optflag("G", "keep-grain", "don't add a RemoveGrain(1) filter");
-    opts.optflag("",
-                 "120",
-                 "convert VFR to 120fps CFR (only works with MKVs)");
-    opts.optflag("",
-                 "10",
-                 "decode Hi10p video");
+    opts.optflag(
+        "",
+        "120",
+        "convert VFR to 120fps CFR (only works with MKVs)",
+    );
+    opts.optflag("", "10", "decode Hi10p video");
 
     let matches = match opts.parse(&args) {
         Ok(m) => m,
@@ -91,36 +103,39 @@ fn main() {
         if matches.opt_present("f") {
             extract_fonts(path.as_ref()).unwrap();
         }
-        create_avs_script(path.as_ref(),
-                          path.with_extension("avs").as_ref(),
-                          &AvsOptions {
-                              remove_grain: if matches.opt_present("G") {
-                                  None
-                              } else {
-                                  Some(1)
-                              },
-                              ass: matches.opt_present("s"),
-                              ass_extract: if matches.opt_present("S") {
-                                  if let Some(track) = matches.opt_str("T") {
-                                      Some(track.parse().expect("No argument supplied for track"))
-                                  } else {
-                                      Some(0)
-                                  }
-                              } else {
-                                  None
-                              },
-                              audio: (matches.opt_present("a"), matches.opt_str("A")),
-                              resize: if matches.opt_present("R") {
-            Some(resize_opt_into_dimensions(matches
-                                                .opt_str("R")
-                                                .expect("No argument supplied for resize")
-                                                .as_ref()))
-        } else {
-                                  None
-                              },
-                              to_cfr: matches.opt_present("120"),
-                              hi10p: matches.opt_present("10")
-                          })
-                .unwrap();
+        create_avs_script(
+            path.as_ref(),
+            path.with_extension("avs").as_ref(),
+            &AvsOptions {
+                remove_grain: if matches.opt_present("G") {
+                    None
+                } else {
+                    Some(1)
+                },
+                ass: matches.opt_present("s"),
+                ass_extract: if matches.opt_present("S") {
+                    if let Some(track) = matches.opt_str("T") {
+                        Some(track.parse().expect("No argument supplied for track"))
+                    } else {
+                        Some(0)
+                    }
+                } else {
+                    None
+                },
+                audio: (matches.opt_present("a"), matches.opt_str("A")),
+                resize: if matches.opt_present("R") {
+                    Some(resize_opt_into_dimensions(
+                        matches
+                            .opt_str("R")
+                            .expect("No argument supplied for resize")
+                            .as_ref(),
+                    ))
+                } else {
+                    None
+                },
+                to_cfr: matches.opt_present("120"),
+                hi10p: matches.opt_present("10"),
+            },
+        ).unwrap();
     }
 }
