@@ -86,14 +86,16 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         if opts.to_cfr && !timecodes_path.exists() {
             File::create(timecodes_path).ok();
         }
-        let mut video_filter_str = format!(
-            "{}(\"{}\")",
-            video_filter,
-            current_filename.canonicalize().unwrap().to_str().unwrap()
-        );
+        let mut filter_opts = String::new();
         if opts.hi10p {
-            video_filter_str.push_str(".f3kdb(input_depth=10, input_mode=2, output_depth=8)");
+            filter_opts.push_str(", format = \"YUV420P8\"");
         }
+        let mut video_filter_str = format!(
+            "{}(\"{}\"{})",
+            video_filter,
+            current_filename.canonicalize().unwrap().to_str().unwrap(),
+            filter_opts
+        );
         if opts.to_cfr {
             // This needs to happen before the `AudioDub`
             // Also, `vfrtocfr` requires the full path to the timecodes file
