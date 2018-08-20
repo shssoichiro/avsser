@@ -133,9 +133,6 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                 ).as_ref(),
             ),
         }
-        if let Some((width, height)) = opts.resize {
-            current_string.push_str(format!(".Spline64Resize({}, {})", width, height).as_ref());
-        }
         if let Some(remove_grain) = opts.remove_grain {
             current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
         }
@@ -161,6 +158,9 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                         .unwrap()
                 ).as_ref(),
             );
+        }
+        if let Some((width, height)) = opts.resize {
+            current_string.push_str(format!(".Spline64Resize({}, {})", width, height).as_ref());
         }
         if breakpoints.is_some() {
             current_string.push_str(
