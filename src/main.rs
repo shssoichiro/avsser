@@ -1,17 +1,16 @@
 extern crate avsser;
 extern crate getopts;
 
+use avsser::generic::input::determine_input_type;
+use avsser::generic::input::get_list_of_files;
+use avsser::generic::output::create_avs_script;
+use avsser::generic::output::extract_fonts;
+use avsser::generic::output::AvsOptions;
 use getopts::Options;
 use std::env;
 use std::path::Path;
-use std::path::PathBuf;
-use avsser::generic::input::get_list_of_files;
-use avsser::generic::input::determine_input_type;
-use avsser::generic::output::create_avs_script;
-use avsser::generic::output::AvsOptions;
-use avsser::generic::output::extract_fonts;
 
-fn print_usage(program: &str, opts: Options) {
+fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] INPUT", program);
     print!("{}", opts.usage(&brief));
 }
@@ -67,6 +66,12 @@ fn main() {
         "resize video to the given width and height",
         "w,h",
     );
+    opts.optopt(
+        "F",
+        "filters",
+        "use a custom filter chain instead of RemoveGrain(1)",
+        "FILTERS",
+    );
     opts.optflag("G", "keep-grain", "don't add a RemoveGrain(1) filter");
     opts.optflag(
         "",
@@ -80,22 +85,21 @@ fn main() {
         Err(f) => panic!(f.to_string()),
     };
     if matches.opt_present("h") {
-        print_usage(&program, opts);
+        print_usage(&program, &opts);
         return;
     }
     let input = if matches.free.is_empty() {
-        print_usage(&program, opts);
+        print_usage(&program, &opts);
         return;
     } else {
         matches.free[0].clone()
     };
 
     let input = get_list_of_files(Path::new(&input), false).unwrap();
-    for file in input {
-        if determine_input_type(file.as_ref()).is_none() {
+    for path in input {
+        if determine_input_type(path.as_ref()).is_none() {
             continue;
         }
-        let path = PathBuf::from(file);
         if matches.opt_present("f") {
             extract_fonts(path.as_ref()).unwrap();
         }
@@ -103,10 +107,16 @@ fn main() {
             path.as_ref(),
             path.with_extension("avs").as_ref(),
             &AvsOptions {
-                remove_grain: if matches.opt_present("G") {
-                    None
+                filters: if matches.opt_present("F") {
+                    matches
+                        .opt_str("F")
+                        .unwrap()
+                        .trim_left_matches('.')
+                        .to_string()
+                } else if matches.opt_present("G") {
+                    String::new()
                 } else {
-                    Some(1)
+                    "RemoveGrain(1)".to_string()
                 },
                 ass: matches.opt_present("s"),
                 ass_extract: if matches.opt_present("S") {

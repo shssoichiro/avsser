@@ -1,3 +1,4 @@
+use super::input::InputTypes;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
@@ -5,10 +6,9 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use uuid::Uuid;
-use super::input::InputTypes;
 
 pub struct AvsOptions {
-    pub remove_grain: Option<u8>,
+    pub filters: String,
     pub ass: bool,
     pub ass_extract: Option<u8>,
     pub audio: (bool, Option<String>),
@@ -133,8 +133,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                 ).as_ref(),
             ),
         }
-        if let Some(remove_grain) = opts.remove_grain {
-            current_string.push_str(format!(".RemoveGrain({})", remove_grain).as_ref());
+        if !opts.filters.is_empty() {
+            current_string.push_str(format!(".{}", opts.filters).as_ref());
         }
         if let Some(sub_track) = opts.ass_extract {
             if current_filename.with_extension("ass").exists() {
@@ -208,14 +208,13 @@ pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
     match Command::new("ffmpeg")
         .args(&[
             "-i",
-            in_file.to_str().unwrap().as_ref(),
+            in_file.to_str().unwrap(),
             "-map",
             &format!("0:s:{}", sub_track),
             "-map_chapters",
             "-1",
-            in_file.with_extension("ass").to_str().unwrap().as_ref(),
-        ])
-        .status()
+            in_file.with_extension("ass").to_str().unwrap(),
+        ]).status()
     {
         Ok(_) => Ok(()),
         Err(x) => Err(format!("{}", x)),
@@ -233,10 +232,9 @@ pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
             match Command::new("mkvextract")
                 .args(&[
                     "attachments",
-                    in_file.to_str().unwrap().as_ref(),
-                    format!("{}:{}", id, font_path.to_str().unwrap()).as_ref(),
-                ])
-                .status()
+                    in_file.to_str().unwrap(),
+                    &format!("{}:{}", id, font_path.to_str().unwrap()),
+                ]).status()
             {
                 Ok(_) => (),
                 Err(x) => return Err(format!("{}", x)),

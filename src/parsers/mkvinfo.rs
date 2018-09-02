@@ -1,8 +1,8 @@
+use regex::Regex;
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
 use std::process::Command;
-use regex::Regex;
 use uuid::Uuid;
 
 lazy_static! {
@@ -25,7 +25,7 @@ lazy_static! {
 
 pub fn get_fonts_list(path: &Path) -> Result<HashMap<usize, String>, String> {
     let output = match Command::new("mkvmerge")
-        .args(&["-i", path.to_str().unwrap().as_ref()])
+        .args(&["-i", path.to_str().unwrap()])
         .output()
     {
         Ok(x) => x,
@@ -60,14 +60,15 @@ pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
     let output = String::from_utf8(output.stdout).unwrap();
     for line in output.lines() {
         if let Some(captures) = SEGMENT_UUID_REGEX.captures(line) {
-            return Ok(Uuid::parse_str(&captures
-                .iter()
-                .skip(1)
-                .take(16)
-                .map(|m| m.unwrap().as_str())
-                .collect::<Vec<&str>>()
-                .concat())
-                .unwrap());
+            return Ok(Uuid::parse_str(
+                &captures
+                    .iter()
+                    .skip(1)
+                    .take(16)
+                    .map(|m| m.unwrap().as_str())
+                    .collect::<Vec<&str>>()
+                    .concat(),
+            ).unwrap());
         }
     }
 
@@ -105,7 +106,7 @@ pub fn get_ordered_chapters_list(
     let output = String::from_utf8(output.stdout).unwrap();
     let mut chapters: Vec<BreakPoint> = Vec::new();
     let mut video_fps: Option<f64> = if force_120_fps {
-        Some(120000. / 1001.)
+        Some(120_000. / 1_001.)
     } else {
         None
     };
@@ -163,14 +164,15 @@ pub fn get_ordered_chapters_list(
                 }
                 if let Some(captures) = FOREIGN_UUID_REGEX.captures(line) {
                     current_chapter.as_mut().unwrap().foreign_uuid = Some(
-                        Uuid::parse_str(&captures
-                            .iter()
-                            .skip(1)
-                            .take(16)
-                            .map(|m| m.unwrap().as_str())
-                            .collect::<Vec<&str>>()
-                            .concat())
-                            .unwrap(),
+                        Uuid::parse_str(
+                            &captures
+                                .iter()
+                                .skip(1)
+                                .take(16)
+                                .map(|m| m.unwrap().as_str())
+                                .collect::<Vec<&str>>()
+                                .concat(),
+                        ).unwrap(),
                     );
                     continue;
                 }

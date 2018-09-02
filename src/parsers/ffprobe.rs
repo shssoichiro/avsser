@@ -1,10 +1,10 @@
-use std::path::Path;
 use std::collections::HashMap;
+use std::path::Path;
 use std::process::Command;
 
 pub fn get_streams_list(path: &Path) -> Result<Vec<HashMap<String, String>>, String> {
     let output = match Command::new("ffprobe")
-        .args(&["-show_streams", path.to_str().unwrap().as_ref()])
+        .args(&["-show_streams", path.to_str().unwrap()])
         .output()
     {
         Ok(x) => x,
