@@ -1,11 +1,13 @@
-use super::input::InputTypes;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+
 use uuid::Uuid;
+
+use super::input::InputTypes;
 
 pub struct AvsOptions {
     pub filters: String,
@@ -108,7 +110,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                         .unwrap()
                         .to_str()
                         .unwrap()
-                ).as_ref(),
+                )
+                .as_ref(),
             );
         }
         match opts.audio {
@@ -118,7 +121,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                     "AudioDub({}, FFAudioSource(\"{}\"))",
                     video_filter_str,
                     current_filename.canonicalize().unwrap().to_str().unwrap()
-                ).as_ref(),
+                )
+                .as_ref(),
             ),
             (_, Some(ref x)) => current_string.push_str(
                 format!(
@@ -130,7 +134,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                         .unwrap()
                         .to_str()
                         .unwrap()
-                ).as_ref(),
+                )
+                .as_ref(),
             ),
         }
         if !opts.filters.is_empty() {
@@ -156,7 +161,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                         .unwrap()
                         .to_str()
                         .unwrap()
-                ).as_ref(),
+                )
+                .as_ref(),
             );
         }
         if let Some((width, height)) = opts.resize {
@@ -168,7 +174,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
                     ".Trim({},{})",
                     current_breakpoint.clone().unwrap().start_frame,
                     current_breakpoint.clone().unwrap().end_frame
-                ).as_ref(),
+                )
+                .as_ref(),
             );
             segments.push(current_string);
         } else {
@@ -190,7 +197,8 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             .cloned()
             .collect::<Vec<String>>()
             .join("\n")
-    ).map_err(|e| e.to_string())?;
+    )
+    .map_err(|e| e.to_string())?;
 
     writeln!(&mut script, "{}", segments.join("\\\n++ ")).map_err(|e| e.to_string())
 }
@@ -214,7 +222,8 @@ pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
             "-map_chapters",
             "-1",
             in_file.with_extension("ass").to_str().unwrap(),
-        ]).status()
+        ])
+        .status()
     {
         Ok(_) => Ok(()),
         Err(x) => Err(format!("{}", x)),
@@ -234,7 +243,8 @@ pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
                     "attachments",
                     in_file.to_str().unwrap(),
                     &format!("{}:{}", id, font_path.to_str().unwrap()),
-                ]).status()
+                ])
+                .status()
             {
                 Ok(_) => (),
                 Err(x) => return Err(format!("{}", x)),

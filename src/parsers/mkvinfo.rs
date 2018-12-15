@@ -1,8 +1,10 @@
-use regex::Regex;
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
 use std::process::Command;
+
+use lazy_static::lazy_static;
+use regex::Regex;
 use uuid::Uuid;
 
 lazy_static! {
@@ -68,7 +70,8 @@ pub fn get_file_uuid(path: &Path) -> Result<Uuid, String> {
                     .map(|m| m.unwrap().as_str())
                     .collect::<Vec<&str>>()
                     .concat(),
-            ).unwrap());
+            )
+            .unwrap());
         }
     }
 
@@ -172,7 +175,8 @@ pub fn get_ordered_chapters_list(
                                 .map(|m| m.unwrap().as_str())
                                 .collect::<Vec<&str>>()
                                 .concat(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     );
                     continue;
                 }

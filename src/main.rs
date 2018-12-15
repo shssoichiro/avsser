@@ -1,14 +1,13 @@
-extern crate avsser;
-extern crate getopts;
+use std::env;
+use std::path::Path;
+
+use getopts::Options;
 
 use avsser::generic::input::determine_input_type;
 use avsser::generic::input::get_list_of_files;
 use avsser::generic::output::create_avs_script;
 use avsser::generic::output::extract_fonts;
 use avsser::generic::output::AvsOptions;
-use getopts::Options;
-use std::env;
-use std::path::Path;
 
 fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] INPUT", program);
@@ -142,6 +141,7 @@ fn main() {
                 to_cfr: matches.opt_present("120"),
                 hi10p: matches.opt_present("10"),
             },
-        ).unwrap();
+        )
+        .unwrap();
     }
 }
