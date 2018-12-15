@@ -1,26 +1,14 @@
 use std::path::Path;
 
-use clap::{App, Arg};
+use clap::App;
+use clap::Arg;
+use clap::ArgMatches;
 
 use avsser::generic::input::determine_input_type;
 use avsser::generic::input::get_list_of_files;
 use avsser::generic::output::create_avs_script;
 use avsser::generic::output::extract_fonts;
 use avsser::generic::output::AvsOptions;
-
-fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
-    let items: Vec<&str> = pair.split(|c| c == ',' || c == 'x' || c == 'X').collect();
-    if items.len() != 2 {
-        panic!("Expected exactly 2 arguments (comma-separated or x-separated) for 'resize'");
-    }
-
-    (
-        items[0].parse().expect("Invalid width supplied to resizer"),
-        items[1]
-            .parse()
-            .expect("Invalid height supplied to resizer"),
-    )
-}
 
 fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
@@ -55,45 +43,60 @@ fn main() {
         if matches.is_present("fonts") {
             extract_fonts(path.as_ref()).unwrap();
         }
-        create_avs_script(
-            path.as_ref(),
-            path.with_extension("avs").as_ref(),
-            &AvsOptions {
-                filters: if matches.is_present("filters") {
-                    matches
-                        .value_of("filters")
-                        .unwrap()
-                        .trim_left_matches('.')
-                        .to_string()
-                } else if matches.is_present("keep-grain") {
-                    String::new()
-                } else {
-                    "RemoveGrain(1)".to_string()
-                },
-                ass: matches.is_present("subtitle"),
-                ass_extract: if matches.is_present("sub-extract") {
-                    Some(
-                        matches
-                            .value_of("sub-track")
-                            .map(|track| {
-                                track.parse().expect("Invalid argument supplied for track")
-                            })
-                            .unwrap_or(0),
-                    )
-                } else {
-                    None
-                },
-                audio: (
-                    matches.is_present("audio"),
-                    matches.value_of("audio-ext").map(|ext| ext.to_string()),
-                ),
-                resize: matches
-                    .value_of("resize")
-                    .map(|resize| resize_opt_into_dimensions(resize)),
-                to_cfr: matches.is_present("120"),
-                hi10p: matches.is_present("10"),
-            },
-        )
-        .unwrap();
+        create_script(&path, &matches).unwrap();
     }
+}
+
+fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
+    let items: Vec<&str> = pair.split(|c| c == ',' || c == 'x' || c == 'X').collect();
+    if items.len() != 2 {
+        panic!("Expected exactly 2 arguments (comma-separated or x-separated) for 'resize'");
+    }
+
+    (
+        items[0].parse().expect("Invalid width supplied to resizer"),
+        items[1]
+            .parse()
+            .expect("Invalid height supplied to resizer"),
+    )
+}
+
+fn create_script(path: &Path, matches: &ArgMatches) -> Result<(), String> {
+    create_avs_script(
+        path,
+        &path.with_extension("avs"),
+        &AvsOptions {
+            filters: if matches.is_present("filters") {
+                matches
+                    .value_of("filters")
+                    .unwrap()
+                    .trim_left_matches('.')
+                    .to_string()
+            } else if matches.is_present("keep-grain") {
+                String::new()
+            } else {
+                "RemoveGrain(1)".to_string()
+            },
+            ass: matches.is_present("subtitle"),
+            ass_extract: if matches.is_present("sub-extract") {
+                Some(
+                    matches
+                        .value_of("sub-track")
+                        .map(|track| track.parse().expect("Invalid argument supplied for track"))
+                        .unwrap_or(0),
+                )
+            } else {
+                None
+            },
+            audio: (
+                matches.is_present("audio"),
+                matches.value_of("audio-ext").map(|ext| ext.to_string()),
+            ),
+            resize: matches
+                .value_of("resize")
+                .map(|resize| resize_opt_into_dimensions(resize)),
+            to_cfr: matches.is_present("120"),
+            hi10p: matches.is_present("10"),
+        },
+    )
 }
