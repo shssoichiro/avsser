@@ -1,0 +1,9 @@
+from vapoursynth import core
+
+video1 = core.ffms2.Source(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv')
+video1 = rgvs.RemoveGrain(video1, 1)
+video1 = core.xyvsf.TextSub(video1, '\\?\E:\Users\jholm\Documents\repos\avsser\files\example.ass')
+
+video = video1
+
+video.set_output()

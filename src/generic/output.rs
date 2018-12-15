@@ -7,6 +7,10 @@ use std::process::Command;
 
 use uuid::Uuid;
 
+use crate::generic::input::determine_input_type;
+use crate::parsers::mkvinfo::get_file_uuid;
+use crate::parsers::mkvinfo::get_fonts_list;
+use crate::parsers::mkvinfo::get_ordered_chapters_list;
 use crate::parsers::mkvinfo::BreakPoint;
 
 use super::input::InputTypes;
@@ -30,8 +34,7 @@ pub struct AvsOptions {
 }
 
 pub fn create_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
-    let breakpoints =
-        super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file, opts.to_cfr)?;
+    let breakpoints = get_ordered_chapters_list(in_file, opts.to_cfr)?;
     let mut iter = 0usize;
     let mut current_breakpoint = None;
     let mut segments: Vec<Vec<String>> = Vec::new();
@@ -58,7 +61,7 @@ pub fn create_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Resu
                         if path.extension().unwrap() != "mkv" || path.as_path() == in_file {
                             continue;
                         }
-                        if let Ok(uuid) = super::super::parsers::mkvinfo::get_file_uuid(&path) {
+                        if let Ok(uuid) = get_file_uuid(&path) {
                             cached_uuids.insert(uuid, path.to_owned());
                             if uuid == current_uuid {
                                 current_filename = path.to_owned();
@@ -157,13 +160,13 @@ pub fn create_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Resu
 #[inline]
 pub fn determine_video_source_filter(path: &Path, opts: &AvsOptions) -> &'static str {
     match opts.script_type {
-        OutputType::Avisynth => match super::input::determine_input_type(path) {
+        OutputType::Avisynth => match determine_input_type(path) {
             Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source",
             Some(InputTypes::DgAvc) => "AVCSource",
             Some(_) => "FFVideoSource",
             None => panic!("Invalid input type"),
         },
-        OutputType::Vapoursynth => match super::input::determine_input_type(path) {
+        OutputType::Vapoursynth => match determine_input_type(path) {
             Some(InputTypes::DgIndex) => "core.d2v.Source",
             Some(InputTypes::DgAvc) => unimplemented!(),
             Some(_) => "core.ffms2.Source",
@@ -199,7 +202,7 @@ pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
 }
 
 pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
-    let fonts = match super::super::parsers::mkvinfo::get_fonts_list(in_file) {
+    let fonts = match get_fonts_list(in_file) {
         Ok(x) => x,
         Err(x) => return Err(x.to_owned()),
     };
@@ -288,7 +291,9 @@ fn build_subtitle_string(current_filename: &Path, opts: &AvsOptions) -> String {
         .unwrap();
     match opts.script_type {
         OutputType::Avisynth => format!("TextSub(\"{}\")", avs_file.to_str().unwrap()),
-        OutputType::Vapoursynth => format!("core.xyvsf.TextSub({})", avs_file.to_str().unwrap()),
+        OutputType::Vapoursynth => {
+            format!("core.xyvsf.TextSub(\'{}\')", avs_file.to_str().unwrap())
+        }
     }
 }
 
@@ -322,7 +327,7 @@ fn get_video_filter_full_name(current_filename: &Path, opts: &AvsOptions) -> &'s
         }
         OutputType::Vapoursynth => {
             if opts.hi10p {
-                "code.LWLibAvVideo.Source"
+                "core.lsmas.LWLibavSource"
             } else {
                 determine_video_source_filter(&current_filename, opts)
             }

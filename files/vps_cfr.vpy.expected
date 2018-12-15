@@ -1,0 +1,9 @@
+from vapoursynth import core
+
+video1 = core.ffms2.Source(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv')
+EXPECTED FAILURE: VFRToCFR not implemented
+video1 = rgvs.RemoveGrain(video1, 1)
+
+video = video1
+
+video.set_output()
