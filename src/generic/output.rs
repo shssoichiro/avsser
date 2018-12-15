@@ -184,7 +184,7 @@ pub fn determine_video_source_filter(path: &Path, opts: &AvsOptions) -> &'static
 pub fn get_default_filters(output: OutputType) -> &'static str {
     match output {
         OutputType::Avisynth => "RemoveGrain(1)",
-        OutputType::Vapoursynth => "rgvs.RemoveGrain(1)",
+        OutputType::Vapoursynth => "core.rgvs.RemoveGrain(1)",
     }
 }
 
