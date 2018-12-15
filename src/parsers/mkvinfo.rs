@@ -87,7 +87,7 @@ enum SectionType {
     Chapters,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct BreakPoint {
     pub start_frame: u64,
     pub end_frame: u64,
@@ -135,7 +135,7 @@ pub fn get_ordered_chapters_list(
             }
             if CHAPTER_ATOM_REGEX.is_match(line) {
                 if current_chapter.is_some() {
-                    chapters.push(current_chapter.unwrap().clone());
+                    chapters.push(current_chapter.unwrap());
                 }
                 current_chapter = Some(BreakPoint {
                     start_frame: 0,
@@ -183,7 +183,7 @@ pub fn get_ordered_chapters_list(
             }
             if EBML_VOID_REGEX.is_match(line) {
                 if current_chapter.is_some() {
-                    chapters.push(current_chapter.unwrap().clone());
+                    chapters.push(current_chapter.unwrap());
                 }
                 break;
             }
@@ -216,7 +216,7 @@ pub fn get_ordered_chapters_list(
         merging.end_frame = chapter.end_frame;
         if let Some(next_chapter) = iter.peek() {
             if next_chapter.foreign_uuid.is_some() && merging.end_frame > 0 {
-                breakpoints.push(merging.clone());
+                breakpoints.push(merging);
                 merging = BreakPoint {
                     start_frame: 0,
                     end_frame: 0,
@@ -225,7 +225,7 @@ pub fn get_ordered_chapters_list(
             }
         } else {
             if merging.end_frame > 0 {
-                breakpoints.push(merging.clone());
+                breakpoints.push(merging);
             }
             break;
         }

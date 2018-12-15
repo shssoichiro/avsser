@@ -7,10 +7,20 @@ use std::process::Command;
 
 use uuid::Uuid;
 
+use crate::parsers::mkvinfo::BreakPoint;
+
 use super::input::InputTypes;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OutputType {
+    Avisynth,
+    Vapoursynth,
+}
+
+#[derive(Debug, Clone)]
 pub struct AvsOptions {
-    pub filters: String,
+    pub script_type: OutputType,
+    pub filters: Vec<String>,
     pub ass: bool,
     pub ass_extract: Option<u8>,
     pub audio: (bool, Option<String>),
@@ -19,12 +29,12 @@ pub struct AvsOptions {
     pub hi10p: bool,
 }
 
-pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
+pub fn create_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Result<(), String> {
     let breakpoints =
         super::super::parsers::mkvinfo::get_ordered_chapters_list(in_file, opts.to_cfr)?;
     let mut iter = 0usize;
     let mut current_breakpoint = None;
-    let mut segments: Vec<String> = Vec::new();
+    let mut segments: Vec<Vec<String>> = Vec::new();
     let mut cached_uuids: HashMap<Uuid, PathBuf> = HashMap::new();
     let mut preloads: HashMap<PathBuf, String> = HashMap::new();
 
@@ -63,83 +73,39 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             }
         }
 
-        let mut current_string = String::new();
+        let mut current_filters = Vec::new();
         if opts.to_cfr && !preloads.contains_key(&current_filename) {
             preloads.insert(
                 current_filename.clone(),
-                format!(
-                    "FFVideoSource(\"{}\", timecodes=\"{}\")",
-                    current_filename.canonicalize().unwrap().to_str().unwrap(),
-                    current_filename
-                        .with_extension("timecodes.txt")
-                        .canonicalize()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                ),
+                build_video_filter_string(&current_filename, opts, true),
             );
         }
-        let video_filter = if opts.hi10p {
-            "LWLibAvVideoSource"
-        } else {
-            determine_video_source_filter(&current_filename)
-        };
-        let timecodes_path = current_filename.with_extension("timecodes.txt");
-        if opts.to_cfr && !timecodes_path.exists() {
-            File::create(timecodes_path).ok();
-        }
-        let mut filter_opts = String::new();
-        if opts.hi10p {
-            filter_opts.push_str(", format = \"YUV420P8\"");
-        }
-        let mut video_filter_str = format!(
-            "{}(\"{}\"{})",
-            video_filter,
-            current_filename.canonicalize().unwrap().to_str().unwrap(),
-            filter_opts
-        );
+        current_filters.push(build_video_filter_string(&current_filename, opts, false));
         if opts.to_cfr {
             // This needs to happen before the `AudioDub`
             // Also, `vfrtocfr` requires the full path to the timecodes file
-            video_filter_str.push_str(
-                format!(
-                    ".vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
-                    current_filename
-                        .with_extension("timecodes.txt")
-                        .canonicalize()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                )
-                .as_ref(),
-            );
+            current_filters.push(build_vfr_string(
+                &current_filename.with_extension("timecodes.txt"),
+                opts,
+            ));
         }
         match opts.audio {
-            (false, None) => current_string.push_str(&video_filter_str),
-            (true, None) => current_string.push_str(
-                format!(
-                    "AudioDub({}, FFAudioSource(\"{}\"))",
-                    video_filter_str,
-                    current_filename.canonicalize().unwrap().to_str().unwrap()
-                )
-                .as_ref(),
-            ),
-            (_, Some(ref x)) => current_string.push_str(
-                format!(
-                    "AudioDub({}, FFAudioSource(\"{}\"))",
-                    video_filter_str,
-                    current_filename
-                        .with_extension(x)
-                        .canonicalize()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                )
-                .as_ref(),
-            ),
+            (false, None) => (),
+            (true, None) => {
+                current_filters.push(build_audio_dub_string(
+                    &current_filename.canonicalize().unwrap(),
+                    opts,
+                ));
+            }
+            (_, Some(ref x)) => {
+                current_filters.push(build_audio_dub_string(
+                    &current_filename.with_extension(x).canonicalize().unwrap(),
+                    opts,
+                ));
+            }
         }
         if !opts.filters.is_empty() {
-            current_string.push_str(format!(".{}", opts.filters).as_ref());
+            current_filters.extend_from_slice(&opts.filters);
         }
         if let Some(sub_track) = opts.ass_extract {
             if current_filename.with_extension("ass").exists() {
@@ -152,34 +118,16 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
             }
         }
         if opts.ass {
-            current_string.push_str(
-                format!(
-                    ".TextSub(\"{}\")",
-                    current_filename
-                        .with_extension("ass")
-                        .canonicalize()
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                )
-                .as_ref(),
-            );
+            current_filters.push(build_subtitle_string(&current_filename, opts));
         }
         if let Some((width, height)) = opts.resize {
-            current_string.push_str(format!(".Spline64Resize({}, {})", width, height).as_ref());
+            current_filters.push(build_resize_string(width, height, opts));
         }
         if breakpoints.is_some() {
-            current_string.push_str(
-                format!(
-                    ".Trim({},{})",
-                    current_breakpoint.clone().unwrap().start_frame,
-                    current_breakpoint.clone().unwrap().end_frame
-                )
-                .as_ref(),
-            );
-            segments.push(current_string);
+            current_filters.push(build_trim_string(current_breakpoint.unwrap(), opts));
+            segments.push(current_filters);
         } else {
-            segments.push(current_string);
+            segments.push(current_filters);
             break;
         }
     }
@@ -189,26 +137,46 @@ pub fn create_avs_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> 
         Err(x) => return Err(format!("{}", x)),
     };
 
-    writeln!(
-        &mut script,
-        "{}",
-        preloads
-            .values()
-            .cloned()
-            .collect::<Vec<String>>()
-            .join("\n")
-    )
-    .map_err(|e| e.to_string())?;
+    if !preloads.is_empty() {
+        writeln!(
+            &mut script,
+            "{}",
+            preloads
+                .values()
+                .cloned()
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+        .map_err(|e| e.to_string())?;
+        writeln!(&mut script).map_err(|e| e.to_string())?;
+    }
 
-    writeln!(&mut script, "{}", segments.join("\\\n++ ")).map_err(|e| e.to_string())
+    write_segments(&segments, opts.script_type, &mut script)
 }
 
-pub fn determine_video_source_filter(path: &Path) -> &'static str {
-    match super::input::determine_input_type(path) {
-        Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source",
-        Some(InputTypes::DgAvc) => "AVCSource",
-        Some(_) => "FFVideoSource",
-        None => panic!("Invalid input type"),
+#[inline]
+pub fn determine_video_source_filter(path: &Path, opts: &AvsOptions) -> &'static str {
+    match opts.script_type {
+        OutputType::Avisynth => match super::input::determine_input_type(path) {
+            Some(InputTypes::DgIndex) => "DGDecode_MPEG2Source",
+            Some(InputTypes::DgAvc) => "AVCSource",
+            Some(_) => "FFVideoSource",
+            None => panic!("Invalid input type"),
+        },
+        OutputType::Vapoursynth => match super::input::determine_input_type(path) {
+            Some(InputTypes::DgIndex) => "core.d2v.Source",
+            Some(InputTypes::DgAvc) => unimplemented!(),
+            Some(_) => "core.ffms2.Source",
+            None => panic!("Invalid input type"),
+        },
+    }
+}
+
+#[inline]
+pub fn get_default_filters(output: OutputType) -> &'static str {
+    match output {
+        OutputType::Avisynth => "RemoveGrain(1)",
+        OutputType::Vapoursynth => "rgvs.RemoveGrain(1)",
     }
 }
 
@@ -253,4 +221,404 @@ pub fn extract_fonts(in_file: &Path) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn build_video_filter_string(
+    current_filename: &Path,
+    opts: &AvsOptions,
+    is_preload: bool,
+) -> String {
+    let video_filter = get_video_filter_full_name(&current_filename, opts);
+    let timecodes_path = current_filename.with_extension("timecodes.txt");
+    if opts.to_cfr && !timecodes_path.exists() {
+        File::create(&timecodes_path).ok();
+    }
+    let mut filter_opts = String::new();
+    if opts.hi10p {
+        filter_opts.push_str(", format = \"YUV420P8\"");
+    }
+    if opts.to_cfr && is_preload {
+        filter_opts.push_str(&format!(
+            ", timecodes=\"{}\"",
+            timecodes_path.canonicalize().unwrap().to_str().unwrap()
+        ));
+    }
+
+    format!(
+        "{}({}{})",
+        video_filter,
+        match opts.script_type {
+            OutputType::Avisynth => format!(
+                "\"{}\"",
+                current_filename.canonicalize().unwrap().to_str().unwrap()
+            ),
+            OutputType::Vapoursynth => format!(
+                "source='{}'",
+                current_filename.canonicalize().unwrap().to_str().unwrap()
+            ),
+        },
+        filter_opts
+    )
+}
+
+fn build_vfr_string(timecodes_path: &Path, opts: &AvsOptions) -> String {
+    match opts.script_type {
+        OutputType::Avisynth => format!(
+            "vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
+            timecodes_path.canonicalize().unwrap().to_str().unwrap()
+        ),
+        OutputType::Vapoursynth => unimplemented!(),
+    }
+}
+
+fn build_audio_dub_string(audio_filename: &Path, opts: &AvsOptions) -> String {
+    match opts.script_type {
+        OutputType::Avisynth => format!(
+            "AudioDub(FFAudioSource(\"{}\"))",
+            audio_filename.to_str().unwrap()
+        ),
+        OutputType::Vapoursynth => unimplemented!(),
+    }
+}
+
+fn build_subtitle_string(current_filename: &Path, opts: &AvsOptions) -> String {
+    let avs_file = current_filename
+        .with_extension("ass")
+        .canonicalize()
+        .unwrap();
+    match opts.script_type {
+        OutputType::Avisynth => format!("TextSub(\"{}\")", avs_file.to_str().unwrap()),
+        OutputType::Vapoursynth => format!("core.xyvsf.TextSub({})", avs_file.to_str().unwrap()),
+    }
+}
+
+fn build_resize_string(width: u32, height: u32, opts: &AvsOptions) -> String {
+    match opts.script_type {
+        OutputType::Avisynth => format!("Spline64Resize({}, {})", width, height),
+        OutputType::Vapoursynth => format!("core.resize.Spline64({}, {})", width, height),
+    }
+}
+
+fn build_trim_string(breakpoint: BreakPoint, opts: &AvsOptions) -> String {
+    match opts.script_type {
+        OutputType::Avisynth => {
+            format!("Trim({},{})", breakpoint.start_frame, breakpoint.end_frame)
+        }
+        OutputType::Vapoursynth => format!(
+            "core.std.Trim({}, {})",
+            breakpoint.start_frame, breakpoint.end_frame
+        ),
+    }
+}
+
+fn get_video_filter_full_name(current_filename: &Path, opts: &AvsOptions) -> &'static str {
+    match opts.script_type {
+        OutputType::Avisynth => {
+            if opts.hi10p {
+                "LWLibAvVideoSource"
+            } else {
+                determine_video_source_filter(&current_filename, opts)
+            }
+        }
+        OutputType::Vapoursynth => {
+            if opts.hi10p {
+                "code.LWLibAvVideo.Source"
+            } else {
+                determine_video_source_filter(&current_filename, opts)
+            }
+        }
+    }
+}
+
+fn write_segments<W: Write>(
+    segments: &[Vec<String>],
+    output_type: OutputType,
+    script: &mut W,
+) -> Result<(), String> {
+    if output_type == OutputType::Vapoursynth {
+        writeln!(script, "from vapoursynth import core").map_err(|e| e.to_string())?;
+        writeln!(script).map_err(|e| e.to_string())?;
+    }
+    for (i, segment) in segments.iter().enumerate() {
+        let video_label = format!("video{}", i + 1);
+        for (j, mut filter) in segment.clone().into_iter().enumerate() {
+            if j > 0 {
+                filter = if filter.contains("()") {
+                    filter.replacen("()", &format!("({})", video_label), 1)
+                } else {
+                    filter.replacen("(", &&format!("({}, ", video_label), 1)
+                };
+            }
+            writeln!(script, "{} = {}", video_label, filter).map_err(|e| e.to_string())?;
+        }
+        writeln!(script).map_err(|e| e.to_string())?;
+    }
+    writeln!(
+        script,
+        "{}{}",
+        if output_type == OutputType::Vapoursynth {
+            "video = "
+        } else {
+            ""
+        },
+        (0..segments.len())
+            .map(|i| format!("video{}", i + 1))
+            .collect::<Vec<String>>()
+            .join(" + ")
+    )
+    .map_err(|e| e.to_string())?;
+    if output_type == OutputType::Vapoursynth {
+        writeln!(script).map_err(|e| e.to_string())?;
+        writeln!(script, "video.set_output()").map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs::File;
+    use std::io::BufReader;
+    use std::io::Read;
+    use std::path::Path;
+
+    use crate::generic::output::create_script;
+    use crate::generic::output::get_default_filters;
+    use crate::generic::output::AvsOptions;
+    use crate::generic::output::OutputType;
+
+    fn read_file(path: &Path) -> String {
+        let file = File::open(path).unwrap();
+        let mut reader = BufReader::new(file);
+        let mut output = String::new();
+        reader.read_to_string(&mut output).unwrap();
+        output.replace("\r\n", "\n")
+    }
+
+    #[test]
+    fn create_script_avs_basic() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_basic.avs");
+        let expected = Path::new("files/avs_basic.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_avs_audio() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_audio.avs");
+        let expected = Path::new("files/avs_audio.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (true, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_avs_hi10p() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_hi10p.avs");
+        let expected = Path::new("files/avs_hi10p.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: true,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_avs_cfr() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_cfr.avs");
+        let expected = Path::new("files/avs_cfr.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: true,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_avs_resize() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_resize.avs");
+        let expected = Path::new("files/avs_resize.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: Some((640, 480)),
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_avs_ass() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/avs_ass.avs");
+        let expected = Path::new("files/avs_ass.avs.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Avisynth,
+            filters: vec![get_default_filters(OutputType::Avisynth).into()],
+            ass: true,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_basic() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_basic.vpy");
+        let expected = Path::new("files/vps_basic.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_audio() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_audio.vpy");
+        let expected = Path::new("files/vps_audio.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (true, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_hi10p() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_hi10p.vpy");
+        let expected = Path::new("files/vps_hi10p.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: true,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_cfr() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_cfr.vpy");
+        let expected = Path::new("files/vps_cfr.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: true,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_resize() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_resize.vpy");
+        let expected = Path::new("files/vps_resize.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: false,
+            ass_extract: None,
+            audio: (false, None),
+            resize: Some((640, 480)),
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
+
+    #[test]
+    fn create_script_vps_ass() {
+        let in_file = Path::new("files/example.mkv");
+        let out_file = Path::new("files/vps_ass.vpy");
+        let expected = Path::new("files/vps_ass.vpy.expected");
+        let opts = AvsOptions {
+            script_type: OutputType::Vapoursynth,
+            filters: vec![get_default_filters(OutputType::Vapoursynth).into()],
+            ass: true,
+            ass_extract: None,
+            audio: (false, None),
+            resize: None,
+            to_cfr: false,
+            hi10p: false,
+        };
+        create_script(in_file, out_file, &opts).unwrap();
+        assert_eq!(&read_file(out_file), &read_file(expected));
+    }
 }

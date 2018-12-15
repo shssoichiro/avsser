@@ -1,0 +1,5 @@
+video1 = FFVideoSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv")
+video1 = RemoveGrain(video1, 1)
+video1 = TextSub(video1, "\\?\E:\Users\jholm\Documents\repos\avsser\files\example.ass")
+
+video1

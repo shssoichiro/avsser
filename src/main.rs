@@ -6,9 +6,11 @@ use clap::ArgMatches;
 
 use avsser::generic::input::determine_input_type;
 use avsser::generic::input::get_list_of_files;
-use avsser::generic::output::create_avs_script;
+use avsser::generic::output::create_script;
 use avsser::generic::output::extract_fonts;
+use avsser::generic::output::get_default_filters;
 use avsser::generic::output::AvsOptions;
+use avsser::generic::output::OutputType;
 
 fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
@@ -32,6 +34,7 @@ fn main() {
         .arg(Arg::with_name("keep-grain").short("G").long("keep-grain").help("don't add a RemoveGrain(1) filter"))
         .arg(Arg::with_name("120").long("120").help("convert VFR to 120fps CFR (only works with MKVs)"))
         .arg(Arg::with_name("10").long("10").help("decode Hi10p video"))
+        .arg(Arg::with_name("vapour").long("vs").help("generate a vapoursynth script instead"))
         .get_matches();
 
     let input = matches.value_of("input").unwrap();
@@ -43,7 +46,7 @@ fn main() {
         if matches.is_present("fonts") {
             extract_fonts(path.as_ref()).unwrap();
         }
-        create_script(&path, &matches).unwrap();
+        create_output(&path, &matches).unwrap();
     }
 }
 
@@ -61,21 +64,30 @@ fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
     )
 }
 
-fn create_script(path: &Path, matches: &ArgMatches) -> Result<(), String> {
-    create_avs_script(
+fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
+    let script_type = if matches.is_present("vapour") {
+        OutputType::Vapoursynth
+    } else {
+        OutputType::Avisynth
+    };
+    create_script(
         path,
-        &path.with_extension("avs"),
+        &match script_type {
+            OutputType::Avisynth => path.with_extension("avs"),
+            OutputType::Vapoursynth => path.with_extension("vpy"),
+        },
         &AvsOptions {
+            script_type,
             filters: if matches.is_present("filters") {
-                matches
+                vec![matches
                     .value_of("filters")
                     .unwrap()
                     .trim_left_matches('.')
-                    .to_string()
+                    .to_string()]
             } else if matches.is_present("keep-grain") {
-                String::new()
+                vec![]
             } else {
-                "RemoveGrain(1)".to_string()
+                vec![get_default_filters(script_type).to_string()]
             },
             ass: matches.is_present("subtitle"),
             ass_extract: if matches.is_present("sub-extract") {

@@ -1,0 +1,7 @@
+FFVideoSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv", timecodes="\\?\E:\Users\jholm\Documents\repos\avsser\files\example.timecodes.txt")
+
+video1 = FFVideoSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv")
+video1 = vfrtocfr(video1, timecodes="\\?\E:\Users\jholm\Documents\repos\avsser\files\example.timecodes.txt", fpsnum=120000, fpsden=1001)
+video1 = RemoveGrain(video1, 1)
+
+video1
