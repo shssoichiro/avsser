@@ -1,7 +1,6 @@
-use std::env;
 use std::path::Path;
 
-use getopts::Options;
+use clap::{App, Arg};
 
 use avsser::generic::input::determine_input_type;
 use avsser::generic::input::get_list_of_files;
@@ -9,15 +8,10 @@ use avsser::generic::output::create_avs_script;
 use avsser::generic::output::extract_fonts;
 use avsser::generic::output::AvsOptions;
 
-fn print_usage(program: &str, opts: &Options) {
-    let brief = format!("Usage: {} [options] INPUT", program);
-    print!("{}", opts.usage(&brief));
-}
-
 fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
-    let items: Vec<&str> = pair.split(',').collect();
+    let items: Vec<&str> = pair.split(|c| c == ',' || c == 'x' || c == 'X').collect();
     if items.len() != 2 {
-        panic!("Expected exactly 2 arguments (comma-separated) for 'resize'");
+        panic!("Expected exactly 2 arguments (comma-separated or x-separated) for 'resize'");
     }
 
     (
@@ -29,117 +23,75 @@ fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
 }
 
 fn main() {
-    let program = env::args().next().unwrap();
-    let args: Vec<String> = env::args().skip(1).collect();
+    let matches = App::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .arg(Arg::with_name("input").help("the input file to generate a script for").required(true).index(1))
+        .arg(Arg::with_name("subtitle")
+            .short("s")
+            .long("subtitle")
+            .help("include subtitles with TextSub(input_filename.ass)"))
+        .arg(Arg::with_name("sub-extract").short("S").long("sub-extract").help("extract subtitles from the input files (defaults to track 0)"))
+        .arg(Arg::with_name("sub-track").short("T").long("sub-track").help("select which subtitle track to extract, 0-indexed (does nothing without -S)")
+            .takes_value(true).value_name("TRACK"))
+        .arg(Arg::with_name("audio").short("a").long("audio").help("include audio from video"))
+        .arg(Arg::with_name("audio-ext").short("A").long("audio-ext").help("include audio from separate file with specified extension (takes precedence over audio \
+         from video)").takes_value(true).value_name("EXT"))
+        .arg(Arg::with_name("fonts").short("f").long("fonts").help("extract fonts from mkv container"))
+        .arg(Arg::with_name("resize").short("R").long("resize").help("resize video to the given width and height").takes_value(true).value_name("W,H"))
+        .arg(Arg::with_name("filters").short("F").long("filters").help("use a custom filter chain instead of RemoveGrain(1)"))
+        .arg(Arg::with_name("keep-grain").short("G").long("keep-grain").help("don't add a RemoveGrain(1) filter"))
+        .arg(Arg::with_name("120").long("120").help("convert VFR to 120fps CFR (only works with MKVs)"))
+        .arg(Arg::with_name("10").long("10").help("decode Hi10p video"))
+        .get_matches();
 
-    let mut opts = Options::new();
-    opts.optflag("h", "help", "print this help menu");
-    opts.optflag(
-        "s",
-        "subtitle",
-        "include subtitles with TextSub(input_filename.ass)",
-    );
-    opts.optflag(
-        "S",
-        "sub-extract",
-        "extract subtitles from the input files (defaults to track 0)",
-    );
-    opts.optopt(
-        "T",
-        "sub-track",
-        "select which subtitle track to extract, 0-indexed (does nothing without -S)",
-        "TRACK",
-    );
-    opts.optflag("a", "audio", "include audio from video");
-    opts.optopt(
-        "A",
-        "audio-ext",
-        "include audio from separate file with extension (takes precedence over audio \
-         from video)",
-        "EXT",
-    );
-    opts.optflag("f", "fonts", "extract fonts from mkv container");
-    opts.optopt(
-        "R",
-        "resize",
-        "resize video to the given width and height",
-        "w,h",
-    );
-    opts.optopt(
-        "F",
-        "filters",
-        "use a custom filter chain instead of RemoveGrain(1)",
-        "FILTERS",
-    );
-    opts.optflag("G", "keep-grain", "don't add a RemoveGrain(1) filter");
-    opts.optflag(
-        "",
-        "120",
-        "convert VFR to 120fps CFR (only works with MKVs)",
-    );
-    opts.optflag("", "10", "decode Hi10p video");
-
-    let matches = match opts.parse(&args) {
-        Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
-    };
-    if matches.opt_present("h") {
-        print_usage(&program, &opts);
-        return;
-    }
-    let input = if matches.free.is_empty() {
-        print_usage(&program, &opts);
-        return;
-    } else {
-        matches.free[0].clone()
-    };
-
+    let input = matches.value_of("input").unwrap();
     let input = get_list_of_files(Path::new(&input), false).unwrap();
     for path in input {
         if determine_input_type(path.as_ref()).is_none() {
             continue;
         }
-        if matches.opt_present("f") {
+        if matches.is_present("fonts") {
             extract_fonts(path.as_ref()).unwrap();
         }
         create_avs_script(
             path.as_ref(),
             path.with_extension("avs").as_ref(),
             &AvsOptions {
-                filters: if matches.opt_present("F") {
+                filters: if matches.is_present("filters") {
                     matches
-                        .opt_str("F")
+                        .value_of("filters")
                         .unwrap()
                         .trim_left_matches('.')
                         .to_string()
-                } else if matches.opt_present("G") {
+                } else if matches.is_present("keep-grain") {
                     String::new()
                 } else {
                     "RemoveGrain(1)".to_string()
                 },
-                ass: matches.opt_present("s"),
-                ass_extract: if matches.opt_present("S") {
-                    if let Some(track) = matches.opt_str("T") {
-                        Some(track.parse().expect("No argument supplied for track"))
-                    } else {
-                        Some(0)
-                    }
-                } else {
-                    None
-                },
-                audio: (matches.opt_present("a"), matches.opt_str("A")),
-                resize: if matches.opt_present("R") {
-                    Some(resize_opt_into_dimensions(
+                ass: matches.is_present("subtitle"),
+                ass_extract: if matches.is_present("sub-extract") {
+                    Some(
                         matches
-                            .opt_str("R")
-                            .expect("No argument supplied for resize")
-                            .as_ref(),
-                    ))
+                            .value_of("sub-track")
+                            .map(|track| {
+                                track.parse().expect("Invalid argument supplied for track")
+                            })
+                            .unwrap_or(0),
+                    )
                 } else {
                     None
                 },
-                to_cfr: matches.opt_present("120"),
-                hi10p: matches.opt_present("10"),
+                audio: (
+                    matches.is_present("audio"),
+                    matches.value_of("audio-ext").map(|ext| ext.to_string()),
+                ),
+                resize: matches
+                    .value_of("resize")
+                    .map(|resize| resize_opt_into_dimensions(resize)),
+                to_cfr: matches.is_present("120"),
+                hi10p: matches.is_present("10"),
             },
         )
         .unwrap();
