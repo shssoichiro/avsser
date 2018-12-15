@@ -140,6 +140,11 @@ pub fn create_script(in_file: &Path, out_file: &Path, opts: &AvsOptions) -> Resu
         Err(x) => return Err(format!("{}", x)),
     };
 
+    if opts.script_type == OutputType::Vapoursynth {
+        writeln!(&mut script, "from vapoursynth import core").map_err(|e| e.to_string())?;
+        writeln!(&mut script).map_err(|e| e.to_string())?;
+    }
+
     if !preloads.is_empty() {
         writeln!(
             &mut script,
@@ -270,7 +275,10 @@ fn build_vfr_string(timecodes_path: &Path, opts: &AvsOptions) -> String {
             "vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",
             timecodes_path.canonicalize().unwrap().to_str().unwrap()
         ),
-        OutputType::Vapoursynth => unimplemented!(),
+        OutputType::Vapoursynth => format!(
+            "vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
+            timecodes_path.canonicalize().unwrap().to_str().unwrap()
+        ),
     }
 }
 
@@ -340,10 +348,6 @@ fn write_segments<W: Write>(
     output_type: OutputType,
     script: &mut W,
 ) -> Result<(), String> {
-    if output_type == OutputType::Vapoursynth {
-        writeln!(script, "from vapoursynth import core").map_err(|e| e.to_string())?;
-        writeln!(script).map_err(|e| e.to_string())?;
-    }
     for (i, segment) in segments.iter().enumerate() {
         let video_label = format!("video{}", i + 1);
         for (j, mut filter) in segment.clone().into_iter().enumerate() {

@@ -1,7 +1,9 @@
 from vapoursynth import core
 
+core.ffms2.Source(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv', timecodes="\\?\E:\Users\jholm\Documents\repos\avsser\files\example.timecodes.txt")
+
 video1 = core.ffms2.Source(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv')
-EXPECTED FAILURE: VFRToCFR not implemented
+video1 = vfrtocfr.VFRToCFR(video1, "\\?\E:\Users\jholm\Documents\repos\avsser\files\example.timecodes.txt", 120000, 1001)
 video1 = rgvs.RemoveGrain(video1, 1)
 
 video = video1
