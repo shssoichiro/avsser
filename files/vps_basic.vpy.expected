@@ -1,6 +1,6 @@
 from vapoursynth import core
 
-video1 = core.ffms2.Source(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv')
+video1 = core.ffms2.Source(source='\\\\?\\E:\\Users\\jholm\\Documents\\repos\\avsser\\files\\example.mkv')
 video1 = rgvs.RemoveGrain(video1, 1)
 
 video = video1

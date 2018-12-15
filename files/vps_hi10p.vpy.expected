@@ -1,6 +1,6 @@
 from vapoursynth import core
 
-video1 = core.lsmas.LWLibavSource(source='\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv', format = "YUV420P8")
+video1 = core.lsmas.LWLibavSource(source='\\\\?\\E:\\Users\\jholm\\Documents\\repos\\avsser\\files\\example.mkv', format = "YUV420P8")
 video1 = rgvs.RemoveGrain(video1, 1)
 
 video = video1

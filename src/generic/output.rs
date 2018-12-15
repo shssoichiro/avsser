@@ -248,7 +248,20 @@ fn build_video_filter_string(
     if opts.to_cfr && is_preload {
         filter_opts.push_str(&format!(
             ", timecodes=\"{}\"",
-            timecodes_path.canonicalize().unwrap().to_str().unwrap()
+            match opts.script_type {
+                OutputType::Avisynth => timecodes_path
+                    .canonicalize()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                OutputType::Vapoursynth => timecodes_path
+                    .canonicalize()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .replace(r"\", r"\\"),
+            },
         ));
     }
 
@@ -262,7 +275,12 @@ fn build_video_filter_string(
             ),
             OutputType::Vapoursynth => format!(
                 "source='{}'",
-                current_filename.canonicalize().unwrap().to_str().unwrap()
+                current_filename
+                    .canonicalize()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .replace(r"\", r"\\")
             ),
         },
         filter_opts
@@ -277,7 +295,12 @@ fn build_vfr_string(timecodes_path: &Path, opts: &AvsOptions) -> String {
         ),
         OutputType::Vapoursynth => format!(
             "vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
-            timecodes_path.canonicalize().unwrap().to_str().unwrap()
+            timecodes_path
+                .canonicalize()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .replace(r"\", r"\\")
         ),
     }
 }
@@ -299,9 +322,10 @@ fn build_subtitle_string(current_filename: &Path, opts: &AvsOptions) -> String {
         .unwrap();
     match opts.script_type {
         OutputType::Avisynth => format!("TextSub(\"{}\")", avs_file.to_str().unwrap()),
-        OutputType::Vapoursynth => {
-            format!("core.xyvsf.TextSub(\'{}\')", avs_file.to_str().unwrap())
-        }
+        OutputType::Vapoursynth => format!(
+            "core.xyvsf.TextSub(\'{}\')",
+            avs_file.to_str().unwrap().replace(r"\", r"\\")
+        ),
     }
 }
 
