@@ -82,7 +82,7 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
                 vec![matches
                     .value_of("filters")
                     .unwrap()
-                    .trim_left_matches('.')
+                    .trim_start_matches('.')
                     .to_string()]
             } else if matches.is_present("keep-grain") {
                 vec![]
