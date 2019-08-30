@@ -323,7 +323,7 @@ fn build_subtitle_string(current_filename: &Path, opts: &AvsOptions) -> String {
     match opts.script_type {
         OutputType::Avisynth => format!("TextSub(\"{}\")", avs_file.to_str().unwrap()),
         OutputType::Vapoursynth => format!(
-            "core.xyvsf.TextSub(\'{}\')",
+            "core.sub.TextFile(\'{}\')",
             avs_file.to_str().unwrap().replace(r"\", r"\\")
         ),
     }
