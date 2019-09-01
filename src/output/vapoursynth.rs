@@ -14,9 +14,6 @@ impl ScriptFormat for VapoursynthWriter {
             File::create(&timecodes_path).ok();
         }
         let mut filter_opts = String::new();
-        if self.opts.hi10p {
-            filter_opts.push_str(", format = \"YUV420P8\"");
-        }
         if self.opts.to_cfr && is_preload {
             filter_opts.push_str(&format!(
                 ", timecodes=\"{}\"",
@@ -29,7 +26,7 @@ impl ScriptFormat for VapoursynthWriter {
             ));
         }
 
-        format!(
+        let mut source_filter = format!(
             "{}({}{})",
             video_filter,
             format!(
@@ -42,7 +39,11 @@ impl ScriptFormat for VapoursynthWriter {
                     .replace(r"\", r"\\")
             ),
             filter_opts
-        )
+        );
+        if self.opts.downsample {
+            source_filter.push_str("\nvideo1 = core.resize.Spline36(video1, format = vs.YUV420P8)");
+        }
+        source_filter
     }
 
     fn build_vfr_string(&self, timecodes_path: &Path) -> String {
@@ -79,7 +80,7 @@ impl ScriptFormat for VapoursynthWriter {
     }
 
     fn build_resize_string(&self, width: u32, height: u32) -> String {
-        format!("core.resize.Spline64({}, {})", width, height)
+        format!("core.resize.Spline36({}, {})", width, height)
     }
 
     fn build_trim_string(&self, breakpoint: BreakPoint) -> String {
@@ -145,11 +146,7 @@ impl VapoursynthWriter {
     }
 
     fn get_video_filter_full_name(&self, current_filename: &Path) -> &'static str {
-        if self.opts.hi10p {
-            "core.lsmas.LWLibavSource"
-        } else {
-            self.determine_video_source_filter(&current_filename)
-        }
+        self.determine_video_source_filter(&current_filename)
     }
 }
 
@@ -181,7 +178,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -201,7 +198,7 @@ mod tests {
             audio: (true, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -209,10 +206,10 @@ mod tests {
     }
 
     #[test]
-    fn create_script_vps_hi10p() {
+    fn create_script_vps_downsample() {
         let in_file = Path::new("files/example.mkv");
-        let out_file = Path::new("files/vps_hi10p.vpy");
-        let expected = Path::new("files/vps_hi10p.vpy.expected");
+        let out_file = Path::new("files/vps_downsample.vpy");
+        let expected = Path::new("files/vps_downsample.vpy.expected");
         let opts = AvsOptions {
             filters: vec![],
             ass: false,
@@ -220,7 +217,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: true,
+            downsample: true,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -239,7 +236,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: true,
-            hi10p: false,
+            downsample: false,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -258,7 +255,7 @@ mod tests {
             audio: (false, None),
             resize: Some((640, 480)),
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -277,7 +274,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();

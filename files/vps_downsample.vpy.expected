@@ -1,8 +1,8 @@
 from vapoursynth import core
 
 video1 = core.ffms2.Source(source='/home/soichiro/repos/avsser/files/example.mkv')
+video1 = core.resize.Spline36(video1, format = vs.YUV420P8)
 video1 = core.rgvs.RemoveGrain(video1, 1)
-video1 = core.resize.Spline36(video1, 640, 480)
 
 video = video1
 

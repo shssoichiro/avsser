@@ -13,7 +13,7 @@ impl ScriptFormat for AvisynthWriter {
             File::create(&timecodes_path).ok();
         }
         let mut filter_opts = String::new();
-        if self.opts.hi10p {
+        if self.opts.downsample {
             filter_opts.push_str(", format = \"YUV420P8\"");
         }
         if self.opts.to_cfr && is_preload {
@@ -123,7 +123,7 @@ impl AvisynthWriter {
     }
 
     fn get_video_filter_full_name(&self, current_filename: &Path) -> &'static str {
-        if self.opts.hi10p {
+        if self.opts.downsample {
             "LWLibAvVideoSource"
         } else {
             self.determine_video_source_filter(&current_filename)
@@ -159,7 +159,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -178,7 +178,7 @@ mod tests {
             audio: (true, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -186,10 +186,10 @@ mod tests {
     }
 
     #[test]
-    fn create_script_avs_hi10p() {
+    fn create_script_avs_downsample() {
         let in_file = Path::new("files/example.mkv");
-        let out_file = Path::new("files/avs_hi10p.avs");
-        let expected = Path::new("files/avs_hi10p.avs.expected");
+        let out_file = Path::new("files/avs_downsample.avs");
+        let expected = Path::new("files/avs_downsample.avs.expected");
         let opts = AvsOptions {
             filters: vec![],
             ass: false,
@@ -197,7 +197,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: true,
+            downsample: true,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -216,7 +216,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: true,
-            hi10p: false,
+            downsample: false,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -235,7 +235,7 @@ mod tests {
             audio: (false, None),
             resize: Some((640, 480)),
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
@@ -254,7 +254,7 @@ mod tests {
             audio: (false, None),
             resize: None,
             to_cfr: false,
-            hi10p: false,
+            downsample: false,
         };
         let writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();

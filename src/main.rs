@@ -29,7 +29,7 @@ fn main() {
         .arg(Arg::with_name("filters").short("F").long("filters").help("use a custom filter chain instead of RemoveGrain(1)"))
         .arg(Arg::with_name("keep-grain").short("G").long("keep-grain").help("don't add a RemoveGrain(1) filter"))
         .arg(Arg::with_name("120").long("120").help("convert VFR to 120fps CFR (only works with MKVs)"))
-        .arg(Arg::with_name("10").long("10").help("decode Hi10p video"))
+        .arg(Arg::with_name("downsample").long("downsample").alias("ds").help("downsample video to YUV420P8"))
         .arg(Arg::with_name("vapour").long("vs").help("generate a vapoursynth script instead"))
         .get_matches();
 
@@ -91,7 +91,7 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
             .value_of("resize")
             .map(|resize| resize_opt_into_dimensions(resize)),
         to_cfr: matches.is_present("120"),
-        hi10p: matches.is_present("10"),
+        downsample: matches.is_present("downsample"),
     };
     let writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
         Box::new(VapoursynthWriter::new(

@@ -179,7 +179,7 @@ pub struct AvsOptions {
     pub audio: (bool, Option<String>),
     pub resize: Option<(u32, u32)>,
     pub to_cfr: bool,
-    pub hi10p: bool,
+    pub downsample: bool,
 }
 
 pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {

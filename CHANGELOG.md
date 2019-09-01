@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.0
+* Rename `--10` option to `--downsample` or `--ds`, because it's actually a general function to downsample to YUV420P8.
+* Lots of Vapoursynth-related fixes
+
 ## 0.8.0
 * Add `--10` option to handle Hi10p video
 
