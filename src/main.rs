@@ -1,16 +1,12 @@
-use std::path::Path;
+#![warn(clippy::all)]
 
+use avsser::input::determine_input_type;
+use avsser::input::get_list_of_files;
+use avsser::output::*;
 use clap::App;
 use clap::Arg;
 use clap::ArgMatches;
-
-use avsser::generic::input::determine_input_type;
-use avsser::generic::input::get_list_of_files;
-use avsser::generic::output::create_script;
-use avsser::generic::output::extract_fonts;
-use avsser::generic::output::get_default_filters;
-use avsser::generic::output::AvsOptions;
-use avsser::generic::output::OutputType;
+use std::path::Path;
 
 fn main() {
     let matches = App::new(env!("CARGO_PKG_NAME"))
@@ -65,50 +61,45 @@ fn resize_opt_into_dimensions(pair: &str) -> (u32, u32) {
 }
 
 fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
-    let script_type = if matches.is_present("vapour") {
-        OutputType::Vapoursynth
-    } else {
-        OutputType::Avisynth
+    let opts = AvsOptions {
+        filters: if matches.is_present("filters") {
+            // FIXME: This is probably broken with avs, definitely broken with vpy
+            vec![matches
+                .value_of("filters")
+                .unwrap()
+                .trim_start_matches('.')
+                .to_string()]
+        } else {
+            vec![]
+        },
+        ass: matches.is_present("subtitle"),
+        ass_extract: if matches.is_present("sub-extract") {
+            Some(
+                matches
+                    .value_of("sub-track")
+                    .map(|track| track.parse().expect("Invalid argument supplied for track"))
+                    .unwrap_or(0),
+            )
+        } else {
+            None
+        },
+        audio: (
+            matches.is_present("audio"),
+            matches.value_of("audio-ext").map(|ext| ext.to_string()),
+        ),
+        resize: matches
+            .value_of("resize")
+            .map(|resize| resize_opt_into_dimensions(resize)),
+        to_cfr: matches.is_present("120"),
+        hi10p: matches.is_present("10"),
     };
-    create_script(
-        path,
-        &match script_type {
-            OutputType::Avisynth => path.with_extension("avs"),
-            OutputType::Vapoursynth => path.with_extension("vpy"),
-        },
-        &AvsOptions {
-            script_type,
-            filters: if matches.is_present("filters") {
-                vec![matches
-                    .value_of("filters")
-                    .unwrap()
-                    .trim_start_matches('.')
-                    .to_string()]
-            } else if matches.is_present("keep-grain") {
-                vec![]
-            } else {
-                vec![get_default_filters(script_type).to_string()]
-            },
-            ass: matches.is_present("subtitle"),
-            ass_extract: if matches.is_present("sub-extract") {
-                Some(
-                    matches
-                        .value_of("sub-track")
-                        .map(|track| track.parse().expect("Invalid argument supplied for track"))
-                        .unwrap_or(0),
-                )
-            } else {
-                None
-            },
-            audio: (
-                matches.is_present("audio"),
-                matches.value_of("audio-ext").map(|ext| ext.to_string()),
-            ),
-            resize: matches
-                .value_of("resize")
-                .map(|resize| resize_opt_into_dimensions(resize)),
-            to_cfr: matches.is_present("120"),
-            hi10p: matches.is_present("10"),
-        },
-    )
+    let writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
+        Box::new(VapoursynthWriter::new(
+            opts,
+            !matches.is_present("keep-grain"),
+        ))
+    } else {
+        Box::new(AvisynthWriter::new(opts, !matches.is_present("keep-grain")))
+    };
+    writer.create_script(path, &path.with_extension(writer.get_script_extension()))
 }

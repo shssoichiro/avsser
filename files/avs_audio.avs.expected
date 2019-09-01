@@ -1,5 +1,5 @@
-video1 = FFVideoSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv")
-video1 = AudioDub(video1, FFAudioSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv"))
+video1 = FFVideoSource("/home/soichiro/repos/avsser/files/example.mkv")
+video1 = AudioDub(video1, FFAudioSource("/home/soichiro/repos/avsser/files/example.mkv"))
 video1 = RemoveGrain(video1, 1)
 
 video1

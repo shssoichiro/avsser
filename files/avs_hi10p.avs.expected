@@ -1,4 +1,4 @@
-video1 = LWLibAvVideoSource("\\?\E:\Users\jholm\Documents\repos\avsser\files\example.mkv", format = "YUV420P8")
+video1 = LWLibAvVideoSource("/home/soichiro/repos/avsser/files/example.mkv", format = "YUV420P8")
 video1 = RemoveGrain(video1, 1)
 
 video1
