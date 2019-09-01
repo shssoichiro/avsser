@@ -91,7 +91,8 @@ impl ScriptFormat for VapoursynthWriter {
     }
 
     fn write_script_header(&self, script: &mut File) -> Result<(), String> {
-        writeln!(script, "from vapoursynth import core").map_err(|e| e.to_string())?;
+        writeln!(script, "import vapoursynth as vs").map_err(|e| e.to_string())?;
+        writeln!(script, "core = vs.get_core()").map_err(|e| e.to_string())?;
         writeln!(script).map_err(|e| e.to_string())?;
         Ok(())
     }

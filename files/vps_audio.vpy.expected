@@ -1,4 +1,5 @@
-from vapoursynth import core
+import vapoursynth as vs
+core = vs.get_core()
 
 video1 = core.ffms2.Source(source='/home/soichiro/repos/avsser/files/example.mkv')
 EXPECTED FAILURE: AudioDub not implemented
