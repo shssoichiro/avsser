@@ -2,9 +2,10 @@ import vapoursynth as vs
 core = vs.get_core()
 
 video1 = core.ffms2.Source(source='/home/soichiro/repos/avsser/files/example.mkv')
-EXPECTED FAILURE: AudioDub not implemented
+video1 = damb.Read(video1, '/home/soichiro/repos/avsser/files/example.mkv')
 video1 = core.rgvs.RemoveGrain(video1, 1)
 
 video = video1
 
+damb.Write(video, '/home/soichiro/repos/avsser/files/example.flac')
 video.set_output()

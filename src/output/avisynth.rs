@@ -56,7 +56,7 @@ impl ScriptFormat for AvisynthWriter {
         )
     }
 
-    fn build_audio_dub_string(&self, audio_filename: &Path) -> String {
+    fn build_audio_dub_string(&mut self, audio_filename: &Path) -> String {
         format!(
             "AudioDub(FFAudioSource(\"{}\"))",
             audio_filename.to_str().unwrap()
@@ -161,7 +161,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -180,7 +180,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -199,7 +199,7 @@ mod tests {
             to_cfr: false,
             downsample: true,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -218,7 +218,7 @@ mod tests {
             to_cfr: true,
             downsample: false,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -237,7 +237,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -256,7 +256,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = AvisynthWriter::new(opts, true);
+        let mut writer = AvisynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }

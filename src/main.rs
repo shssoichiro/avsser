@@ -93,7 +93,7 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
         to_cfr: matches.is_present("120"),
         downsample: matches.is_present("downsample"),
     };
-    let writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
+    let mut writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
         Box::new(VapoursynthWriter::new(
             opts,
             !matches.is_present("keep-grain"),

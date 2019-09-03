@@ -4,6 +4,7 @@ use std::path::Path;
 
 pub struct VapoursynthWriter {
     opts: AvsOptions,
+    audio_filename: Option<PathBuf>,
 }
 
 impl ScriptFormat for VapoursynthWriter {
@@ -68,8 +69,12 @@ impl ScriptFormat for VapoursynthWriter {
         "vpy"
     }
 
-    fn build_audio_dub_string(&self, _audio_filename: &Path) -> String {
-        unimplemented!("TODO");
+    fn build_audio_dub_string(&mut self, audio_filename: &Path) -> String {
+        self.audio_filename = Some(audio_filename.to_path_buf());
+        format!(
+            "damb.Read(\'{}\')",
+            audio_filename.to_str().unwrap().replace(r"\", r"\\")
+        )
     }
 
     fn build_subtitle_string(&self, subtitle_filename: &Path) -> String {
@@ -122,6 +127,18 @@ impl ScriptFormat for VapoursynthWriter {
         )
         .map_err(|e| e.to_string())?;
         writeln!(script).map_err(|e| e.to_string())?;
+        if let Some(ref audio_filename) = self.audio_filename {
+            writeln!(
+                script,
+                "damb.Write(video, \'{}\')",
+                audio_filename
+                    .with_extension("flac")
+                    .to_str()
+                    .unwrap()
+                    .replace(r"\", r"\\")
+            )
+            .map_err(|e| e.to_string())?;
+        }
         writeln!(script, "video.set_output()").map_err(|e| e.to_string())?;
 
         Ok(())
@@ -134,7 +151,10 @@ impl VapoursynthWriter {
         if apply_default_filters {
             opts.filters.extend_from_slice(default_filters);
         }
-        VapoursynthWriter { opts }
+        VapoursynthWriter {
+            opts,
+            audio_filename: Default::default(),
+        }
     }
 
     fn determine_video_source_filter(&self, path: &Path) -> &'static str {
@@ -181,13 +201,12 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
 
     #[test]
-    #[ignore]
     fn create_script_vps_audio() {
         let in_file = Path::new("files/example.mkv");
         let out_file = Path::new("files/vps_audio.vpy");
@@ -201,7 +220,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -220,7 +239,7 @@ mod tests {
             to_cfr: false,
             downsample: true,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -239,7 +258,7 @@ mod tests {
             to_cfr: true,
             downsample: false,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -258,7 +277,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }
@@ -277,7 +296,7 @@ mod tests {
             to_cfr: false,
             downsample: false,
         };
-        let writer = VapoursynthWriter::new(opts, true);
+        let mut writer = VapoursynthWriter::new(opts, true);
         writer.create_script(in_file, out_file).unwrap();
         assert_eq!(&read_file(out_file), &read_file(expected));
     }

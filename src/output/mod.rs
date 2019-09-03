@@ -19,7 +19,7 @@ pub use avisynth::*;
 pub use vapoursynth::*;
 
 pub trait ScriptFormat {
-    fn create_script(&self, in_file: &Path, out_file: &Path) -> Result<(), String> {
+    fn create_script(&mut self, in_file: &Path, out_file: &Path) -> Result<(), String> {
         let breakpoints = get_ordered_chapters_list(in_file, self.get_opts().to_cfr)?;
         let mut iter = 0usize;
         let mut current_breakpoint = None;
@@ -78,7 +78,8 @@ pub trait ScriptFormat {
                 current_filters
                     .push(self.build_vfr_string(&current_filename.with_extension("timecodes.txt")));
             }
-            match self.get_opts().audio {
+            let audio = self.get_opts().audio.clone();
+            match audio {
                 (false, None) => (),
                 (true, None) => {
                     current_filters.push(
@@ -155,7 +156,7 @@ pub trait ScriptFormat {
 
     fn build_vfr_string(&self, timecodes_path: &Path) -> String;
 
-    fn build_audio_dub_string(&self, audio_filename: &Path) -> String;
+    fn build_audio_dub_string(&mut self, audio_filename: &Path) -> String;
 
     fn build_subtitle_string(&self, subtitle_filename: &Path) -> String;
 
