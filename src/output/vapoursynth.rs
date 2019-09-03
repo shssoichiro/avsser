@@ -72,7 +72,7 @@ impl ScriptFormat for VapoursynthWriter {
     fn build_audio_dub_string(&mut self, audio_filename: &Path) -> String {
         self.audio_filename = Some(audio_filename.to_path_buf());
         format!(
-            "damb.Read(\'{}\')",
+            "core.damb.Read(\'{}\')",
             audio_filename.to_str().unwrap().replace(r"\", r"\\")
         )
     }
@@ -130,7 +130,7 @@ impl ScriptFormat for VapoursynthWriter {
         if let Some(ref audio_filename) = self.audio_filename {
             writeln!(
                 script,
-                "damb.Write(video, \'{}\')",
+                "core.damb.Write(video, \'{}\')",
                 audio_filename
                     .with_extension("flac")
                     .to_str()
