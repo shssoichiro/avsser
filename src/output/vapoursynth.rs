@@ -18,12 +18,7 @@ impl ScriptFormat for VapoursynthWriter {
         if self.opts.to_cfr && is_preload {
             filter_opts.push_str(&format!(
                 ", timecodes=\"{}\"",
-                timecodes_path
-                    .canonicalize()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .replace(r"\", r"\\"),
+                escape_python_string(timecodes_path.canonicalize().unwrap().to_str().unwrap()),
             ));
         }
 
@@ -32,12 +27,7 @@ impl ScriptFormat for VapoursynthWriter {
             video_filter,
             format!(
                 "source='{}'",
-                current_filename
-                    .canonicalize()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .replace(r"\", r"\\")
+                escape_python_string(current_filename.canonicalize().unwrap().to_str().unwrap())
             ),
             filter_opts
         );
@@ -50,12 +40,7 @@ impl ScriptFormat for VapoursynthWriter {
     fn build_vfr_string(&self, timecodes_path: &Path) -> String {
         format!(
             "vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
-            timecodes_path
-                .canonicalize()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .replace(r"\", r"\\")
+            escape_python_string(timecodes_path.canonicalize().unwrap().to_str().unwrap())
         )
     }
 
@@ -73,14 +58,14 @@ impl ScriptFormat for VapoursynthWriter {
         self.audio_filename = Some(audio_filename.to_path_buf());
         format!(
             "core.damb.Read(\'{}\')",
-            audio_filename.to_str().unwrap().replace(r"\", r"\\")
+            escape_python_string(audio_filename.to_str().unwrap())
         )
     }
 
     fn build_subtitle_string(&self, subtitle_filename: &Path) -> String {
         format!(
             "core.sub.TextFile(\'{}\')",
-            subtitle_filename.to_str().unwrap().replace(r"\", r"\\")
+            escape_python_string(subtitle_filename.to_str().unwrap())
         )
     }
 
@@ -131,11 +116,7 @@ impl ScriptFormat for VapoursynthWriter {
             writeln!(
                 script,
                 "core.damb.Write(video, \'{}\')",
-                audio_filename
-                    .with_extension("flac")
-                    .to_str()
-                    .unwrap()
-                    .replace(r"\", r"\\")
+                escape_python_string(audio_filename.with_extension("flac").to_str().unwrap())
             )
             .map_err(|e| e.to_string())?;
         }
@@ -143,6 +124,10 @@ impl ScriptFormat for VapoursynthWriter {
 
         Ok(())
     }
+}
+
+fn escape_python_string(input: &str) -> String {
+    input.replace(r"\", r"\\").replace(r"'", r"\'")
 }
 
 impl VapoursynthWriter {
