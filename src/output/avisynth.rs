@@ -49,6 +49,10 @@ impl ScriptFormat for AvisynthWriter {
         "avs"
     }
 
+    fn build_downsample_string(&self) -> Option<String> {
+        None
+    }
+
     fn build_vfr_string(&self, timecodes_path: &Path) -> String {
         format!(
             "vfrtocfr(timecodes=\"{}\", fpsnum=120000, fpsden=1001)",

@@ -92,6 +92,11 @@ pub trait ScriptFormat {
                     ));
                 }
             }
+            if self.get_opts().downsample {
+                if let Some(filter) = self.build_downsample_string() {
+                    current_filters.push(filter);
+                }
+            }
             if !self.get_opts().filters.is_empty() {
                 current_filters.extend_from_slice(&self.get_opts().filters);
             }
@@ -153,6 +158,8 @@ pub trait ScriptFormat {
     fn get_script_extension(&self) -> &'static str;
 
     fn build_video_filter_string(&self, current_filename: &Path, is_preload: bool) -> String;
+
+    fn build_downsample_string(&self) -> Option<String>;
 
     fn build_vfr_string(&self, timecodes_path: &Path) -> String;
 

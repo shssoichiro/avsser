@@ -22,7 +22,7 @@ impl ScriptFormat for VapoursynthWriter {
             ));
         }
 
-        let mut source_filter = format!(
+        format!(
             "{}({}{})",
             video_filter,
             format!(
@@ -30,11 +30,7 @@ impl ScriptFormat for VapoursynthWriter {
                 escape_python_string(current_filename.canonicalize().unwrap().to_str().unwrap())
             ),
             filter_opts
-        );
-        if self.opts.downsample {
-            source_filter.push_str("\nvideo1 = core.resize.Spline36(video1, format = vs.YUV420P8)");
-        }
-        source_filter
+        )
     }
 
     fn build_vfr_string(&self, timecodes_path: &Path) -> String {
@@ -42,6 +38,10 @@ impl ScriptFormat for VapoursynthWriter {
             "vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
             escape_python_string(timecodes_path.canonicalize().unwrap().to_str().unwrap())
         )
+    }
+
+    fn build_downsample_string(&self) -> Option<String> {
+        Some("core.resize.Spline36(format = vs.YUV420P8)".to_string())
     }
 
     #[inline(always)]

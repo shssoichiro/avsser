@@ -162,7 +162,7 @@ pub fn get_ordered_chapters_list(
                         captures[3].parse::<f64>().unwrap()
                             + captures[4].parse::<f64>().unwrap() / 1_000_000_000f64,
                         video_fps.unwrap(),
-                    );
+                    ) - 1;
                     continue;
                 }
                 if let Some(captures) = FOREIGN_UUID_REGEX.captures(line) {
