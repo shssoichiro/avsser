@@ -42,7 +42,9 @@ fn main() {
         if matches.is_present("fonts") {
             extract_fonts(path.as_ref()).unwrap();
         }
-        create_output(&path, &matches).unwrap();
+        if let Err(e) = create_output(&path, &matches) {
+            eprintln!("An error occurred on {}: {}", path.to_str().unwrap(), e);
+        }
     }
 }
 

@@ -82,14 +82,19 @@ pub trait ScriptFormat {
             match audio {
                 (false, None) => (),
                 (true, None) => {
-                    current_filters.push(
-                        self.build_audio_dub_string(&current_filename.canonicalize().unwrap()),
-                    );
+                    current_filters.push(self.build_audio_dub_string(
+                        &current_filename.canonicalize().map_err(|e| e.to_string())?,
+                    ));
                 }
                 (_, Some(ref x)) => {
-                    current_filters.push(self.build_audio_dub_string(
-                        &current_filename.with_extension(x).canonicalize().unwrap(),
-                    ));
+                    current_filters.push(
+                        self.build_audio_dub_string(
+                            &current_filename
+                                .with_extension(x)
+                                .canonicalize()
+                                .map_err(|e| e.to_string())?,
+                        ),
+                    );
                 }
             }
             if self.get_opts().downsample {
