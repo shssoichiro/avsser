@@ -115,12 +115,13 @@ impl ScriptFormat for VapoursynthWriter {
         if let Some(ref audio_filename) = self.audio_filename {
             writeln!(
                 script,
-                "core.damb.Write(video, \'{}\')",
+                "core.damb.Write(video, \'{}\').set_output()",
                 escape_python_string(audio_filename.with_extension("flac").to_str().unwrap())
             )
             .map_err(|e| e.to_string())?;
+        } else {
+            writeln!(script, "video.set_output()").map_err(|e| e.to_string())?;
         }
-        writeln!(script, "video.set_output()").map_err(|e| e.to_string())?;
 
         Ok(())
     }
