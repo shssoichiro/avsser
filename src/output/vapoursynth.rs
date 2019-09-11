@@ -35,7 +35,7 @@ impl ScriptFormat for VapoursynthWriter {
 
     fn build_vfr_string(&self, timecodes_path: &Path) -> String {
         format!(
-            "vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
+            "core.vfrtocfr.VFRToCFR(\"{}\", 120000, 1001)",
             escape_python_string(timecodes_path.canonicalize().unwrap().to_str().unwrap())
         )
     }
