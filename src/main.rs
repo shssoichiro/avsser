@@ -99,6 +99,11 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
         Box::new(VapoursynthWriter::new(
             opts,
             !matches.is_present("keep-grain"),
+            if matches.is_present("audio") {
+                Some(path.with_extension("flac"))
+            } else {
+                None
+            },
         ))
     } else {
         Box::new(AvisynthWriter::new(opts, !matches.is_present("keep-grain")))

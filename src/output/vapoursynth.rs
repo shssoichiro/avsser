@@ -55,7 +55,6 @@ impl ScriptFormat for VapoursynthWriter {
     }
 
     fn build_audio_dub_string(&mut self, audio_filename: &Path) -> String {
-        self.audio_filename = Some(audio_filename.to_path_buf());
         format!(
             "core.damb.Read(\'{}\')",
             escape_python_string(audio_filename.to_str().unwrap())
@@ -132,14 +131,18 @@ fn escape_python_string(input: &str) -> String {
 }
 
 impl VapoursynthWriter {
-    pub fn new(mut opts: AvsOptions, apply_default_filters: bool) -> Self {
+    pub fn new(
+        mut opts: AvsOptions,
+        apply_default_filters: bool,
+        audio_filename: Option<PathBuf>,
+    ) -> Self {
         let default_filters: &[String] = &["core.rgvs.RemoveGrain(1)".to_string()];
         if apply_default_filters {
             opts.filters.extend_from_slice(default_filters);
         }
         VapoursynthWriter {
             opts,
-            audio_filename: Default::default(),
+            audio_filename,
         }
     }
 
