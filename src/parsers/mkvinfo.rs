@@ -134,8 +134,8 @@ pub fn get_ordered_chapters_list(
                 continue;
             }
             if CHAPTER_ATOM_REGEX.is_match(line) {
-                if current_chapter.is_some() {
-                    chapters.push(current_chapter.unwrap());
+                if let Some(chapter) = current_chapter {
+                    chapters.push(chapter);
                 }
                 current_chapter = Some(BreakPoint {
                     start_frame: 0,
@@ -182,8 +182,8 @@ pub fn get_ordered_chapters_list(
                 }
             }
             if EBML_VOID_REGEX.is_match(line) {
-                if current_chapter.is_some() {
-                    chapters.push(current_chapter.unwrap());
+                if let Some(chapter) = current_chapter {
+                    chapters.push(chapter);
                 }
                 break;
             }
