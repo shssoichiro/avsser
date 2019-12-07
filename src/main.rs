@@ -31,6 +31,7 @@ fn main() {
         .arg(Arg::with_name("120").long("120").help("convert VFR to 120fps CFR (only works with MKVs)"))
         .arg(Arg::with_name("downsample").long("downsample").alias("ds").help("downsample video to YUV420P8"))
         .arg(Arg::with_name("vapour").long("vs").help("generate a vapoursynth script instead"))
+        .arg(Arg::with_name("fast-fp").alias("with-fp").long("fast-fp").help("also generate a fast .fp.vpy script"))
         .get_matches();
 
     let input = matches.value_of("input").unwrap();
@@ -94,6 +95,7 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
             .map(|resize| resize_opt_into_dimensions(resize)),
         to_cfr: matches.is_present("120"),
         downsample: matches.is_present("downsample"),
+        fast_fp: matches.is_present("fast-fp"),
     };
     let mut writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
         Box::new(VapoursynthWriter::new(

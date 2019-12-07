@@ -5,7 +5,7 @@ use crate::parsers::mkvinfo::get_fonts_list;
 use crate::parsers::mkvinfo::get_ordered_chapters_list;
 use crate::parsers::mkvinfo::BreakPoint;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{copy, File};
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -155,7 +155,12 @@ pub trait ScriptFormat {
             writeln!(&mut script).map_err(|e| e.to_string())?;
         }
 
-        self.write_segments(&segments, &mut script)
+        self.write_segments(&segments, &mut script)?;
+        script.sync_all().map_err(|e| e.to_string())?;
+        if self.get_opts().fast_fp {
+            copy(out_file, &out_file.with_extension("fp.vpy")).map_err(|e| e.to_string())?;
+        }
+        Ok(())
     }
 
     fn get_opts(&self) -> &AvsOptions;
@@ -193,6 +198,7 @@ pub struct AvsOptions {
     pub resize: Option<(u32, u32)>,
     pub to_cfr: bool,
     pub downsample: bool,
+    pub fast_fp: bool,
 }
 
 pub fn extract_subtitles(in_file: &Path, sub_track: u8) -> Result<(), String> {
