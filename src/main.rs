@@ -27,7 +27,7 @@ fn main() {
         .arg(Arg::with_name("fonts").short("f").long("fonts").help("extract fonts from mkv container"))
         .arg(Arg::with_name("resize").short("R").long("resize").help("resize video to the given width and height").takes_value(true).value_name("W,H"))
         .arg(Arg::with_name("filters").short("F").long("filters").help("use a custom filter chain instead of RemoveGrain(1)"))
-        .arg(Arg::with_name("keep-grain").short("G").long("keep-grain").help("don't add a RemoveGrain(1) filter"))
+        .arg(Arg::with_name("remove-grain").short("G").long("remove-grain").help("simple add a RemoveGrain(1) filter"))
         .arg(Arg::with_name("120").long("120").help("convert VFR to 120fps CFR (only works with MKVs)"))
         .arg(Arg::with_name("downsample").long("downsample").alias("ds").help("downsample video to YUV420P8"))
         .arg(Arg::with_name("vapour").long("vs").help("generate a vapoursynth script instead"))
@@ -100,7 +100,7 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
     let mut writer: Box<dyn ScriptFormat> = if matches.is_present("vapour") {
         Box::new(VapoursynthWriter::new(
             opts,
-            !matches.is_present("keep-grain"),
+            matches.is_present("remove-grain"),
             if matches.is_present("audio") {
                 Some(path.with_extension("flac"))
             } else {
@@ -108,7 +108,10 @@ fn create_output(path: &Path, matches: &ArgMatches) -> Result<(), String> {
             },
         ))
     } else {
-        Box::new(AvisynthWriter::new(opts, !matches.is_present("keep-grain")))
+        Box::new(AvisynthWriter::new(
+            opts,
+            matches.is_present("remove-grain"),
+        ))
     };
     writer.create_script(path, &path.with_extension(writer.get_script_extension()))
 }
