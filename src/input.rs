@@ -51,7 +51,7 @@ pub fn determine_input_type(path: &Path) -> Option<InputTypes> {
         "avi" => Some(InputTypes::Avi),
         "d2v" => Some(InputTypes::DgIndex),
         "dga" => Some(InputTypes::DgAvc),
-        "mpeg" | "mpg" | "wmv" | "mov" | "flv" | "webm" => Some(InputTypes::Other),
+        "mpeg" | "mpg" | "wmv" | "mov" | "flv" | "webm" | "ivf" => Some(InputTypes::Other),
         _ => None,
     }
 }
