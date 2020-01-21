@@ -150,7 +150,7 @@ impl VapoursynthWriter {
         match determine_input_type(path) {
             Some(InputTypes::DgIndex) => "core.d2v.Source",
             Some(InputTypes::DgAvc) => unimplemented!(),
-            Some(_) => "core.lsmas.LWLibavSource",
+            Some(_) => "core.ffms2.Source",
             None => panic!("Invalid input type"),
         }
     }
